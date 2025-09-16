@@ -433,6 +433,7 @@ export class AppointmentsService {
           const appointmentEndTime = appointmentEnd.getTime();
 
           // Rule 1: If slot start time is within an existing appointment → OCCUPIED (red)
+          // This means the slot start time falls inside an existing booking
           if (
             slotStartTime >= appointmentStartTime &&
             slotStartTime < appointmentEndTime
@@ -444,9 +445,10 @@ export class AppointmentsService {
           }
 
           // Rule 2: If slot end time would extend into an existing appointment → DURATION_CONFLICT (orange)
+          // This means the slot would overlap with an existing booking due to its duration
           if (
             slotEndTime > appointmentStartTime &&
-            slotEndTime <= appointmentEndTime
+            slotStartTime < appointmentStartTime
           ) {
             conflictType = 'duration_conflict';
             isOccupied = false;
@@ -455,6 +457,7 @@ export class AppointmentsService {
           }
 
           // Rule 3: If existing appointment is completely within the slot → DURATION_CONFLICT (orange)
+          // This means the slot would completely contain an existing booking
           if (
             appointmentStartTime >= slotStartTime &&
             appointmentEndTime <= slotEndTime
