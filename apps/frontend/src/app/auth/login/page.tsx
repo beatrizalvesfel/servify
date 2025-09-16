@@ -37,7 +37,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-zinc-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">S</span>
             </div>
           </div>

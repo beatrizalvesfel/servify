@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -9,7 +14,8 @@ export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createAppointmentDto: CreateAppointmentDto, companyId: string) {
-    const { serviceId, professionalId, startTime, endTime } = createAppointmentDto;
+    const { serviceId, professionalId, startTime, endTime } =
+      createAppointmentDto;
 
     // Validate that service and professional belong to the company
     const [service, professional] = await Promise.all([
@@ -71,17 +77,24 @@ export class AppointmentsService {
     });
 
     if (conflictingAppointment) {
-      const conflictStart = new Date(conflictingAppointment.startTime).toLocaleString();
-      const conflictEnd = new Date(conflictingAppointment.endTime).toLocaleString();
+      const conflictStart = new Date(
+        conflictingAppointment.startTime,
+      ).toLocaleString();
+      const conflictEnd = new Date(
+        conflictingAppointment.endTime,
+      ).toLocaleString();
       throw new ConflictException(
-        `Time slot conflicts with existing appointment (${conflictStart} - ${conflictEnd})`
+        `Time slot conflicts with existing appointment (${conflictStart} - ${conflictEnd})`,
       );
     }
 
     // Validate appointment duration matches service duration
     const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    if (Math.abs(durationMinutes - service.duration) > 5) { // Allow 5 minutes tolerance
-      throw new BadRequestException(`Appointment duration must match service duration (${service.duration} minutes)`);
+    if (Math.abs(durationMinutes - service.duration) > 5) {
+      // Allow 5 minutes tolerance
+      throw new BadRequestException(
+        `Appointment duration must match service duration (${service.duration} minutes)`,
+      );
     }
 
     return this.prisma.appointment.create({
@@ -113,13 +126,16 @@ export class AppointmentsService {
     });
   }
 
-  async findAll(companyId: string, filters?: {
-    professionalId?: string;
-    serviceId?: string;
-    status?: AppointmentStatus;
-    startDate?: string;
-    endDate?: string;
-  }) {
+  async findAll(
+    companyId: string,
+    filters?: {
+      professionalId?: string;
+      serviceId?: string;
+      status?: AppointmentStatus;
+      startDate?: string;
+      endDate?: string;
+    },
+  ) {
     const where: any = { companyId };
 
     if (filters?.professionalId) {
@@ -200,14 +216,24 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async update(id: string, updateAppointmentDto: UpdateAppointmentDto, companyId: string) {
+  async update(
+    id: string,
+    updateAppointmentDto: UpdateAppointmentDto,
+    companyId: string,
+  ) {
     const existingAppointment = await this.findOne(id, companyId);
 
     // If updating time, validate conflicts
     if (updateAppointmentDto.startTime || updateAppointmentDto.endTime) {
-      const startTime = updateAppointmentDto.startTime ? new Date(updateAppointmentDto.startTime) : existingAppointment.startTime;
-      const endTime = updateAppointmentDto.endTime ? new Date(updateAppointmentDto.endTime) : existingAppointment.endTime;
-      const professionalId = updateAppointmentDto.professionalId || existingAppointment.professionalId;
+      const startTime = updateAppointmentDto.startTime
+        ? new Date(updateAppointmentDto.startTime)
+        : existingAppointment.startTime;
+      const endTime = updateAppointmentDto.endTime
+        ? new Date(updateAppointmentDto.endTime)
+        : existingAppointment.endTime;
+      const professionalId =
+        updateAppointmentDto.professionalId ||
+        existingAppointment.professionalId;
 
       if (startTime >= endTime) {
         throw new BadRequestException('Start time must be before end time');
@@ -244,7 +270,9 @@ export class AppointmentsService {
       });
 
       if (conflictingAppointment) {
-        throw new ConflictException('Time slot conflicts with existing appointment');
+        throw new ConflictException(
+          'Time slot conflicts with existing appointment',
+        );
       }
     }
 
@@ -252,8 +280,12 @@ export class AppointmentsService {
       where: { id },
       data: {
         ...updateAppointmentDto,
-        ...(updateAppointmentDto.startTime && { startTime: new Date(updateAppointmentDto.startTime) }),
-        ...(updateAppointmentDto.endTime && { endTime: new Date(updateAppointmentDto.endTime) }),
+        ...(updateAppointmentDto.startTime && {
+          startTime: new Date(updateAppointmentDto.startTime),
+        }),
+        ...(updateAppointmentDto.endTime && {
+          endTime: new Date(updateAppointmentDto.endTime),
+        }),
       },
       include: {
         service: {
@@ -313,7 +345,12 @@ export class AppointmentsService {
     });
   }
 
-  async getAvailableSlots(professionalId: string, serviceId: string, date: string, companyId: string) {
+  async getAvailableSlots(
+    professionalId: string,
+    serviceId: string,
+    date: string,
+    companyId: string,
+  ) {
     // Validate professional and service
     const [professional, service] = await Promise.all([
       this.prisma.professional.findFirst({
@@ -337,7 +374,7 @@ export class AppointmentsService {
     const dateObj = new Date(date + 'T00:00:00');
     const startOfDay = new Date(dateObj);
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date(dateObj);
     endOfDay.setHours(23, 59, 59, 999);
 
@@ -359,8 +396,6 @@ export class AppointmentsService {
       },
     });
 
-
-
     // Generate all possible time slots (available and occupied)
     const allSlots = [];
     const availableSlots = [];
@@ -368,12 +403,12 @@ export class AppointmentsService {
     const startHour = 8;
     const endHour = 18;
     const slotDuration = service.duration;
-    
+
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const slotStart = new Date(startOfDay);
         slotStart.setHours(hour, minute, 0, 0);
-        
+
         const slotEnd = new Date(slotStart);
         slotEnd.setMinutes(slotEnd.getMinutes() + slotDuration);
 
@@ -383,66 +418,51 @@ export class AppointmentsService {
         }
 
         // Check if this slot conflicts with existing appointments
-        const conflictingAppointment = appointments.find(appointment => {
-          // Convert to Date objects for proper comparison
+        let conflictType = null;
+        let isOccupied = false;
+        let conflictingAppointment = null;
+
+        // Check each existing appointment to determine conflict type
+        for (const appointment of appointments) {
           const appointmentStart = new Date(appointment.startTime);
           const appointmentEnd = new Date(appointment.endTime);
-          
-          // Ensure we're comparing dates in the same timezone
+
           const slotStartTime = slotStart.getTime();
           const slotEndTime = slotEnd.getTime();
           const appointmentStartTime = appointmentStart.getTime();
           const appointmentEndTime = appointmentEnd.getTime();
-          
-          // Check for any overlap between the slot and existing appointment
-          // The slot represents the time needed for the service
-          return (
-            // Slot starts during existing appointment
-            (slotStartTime >= appointmentStartTime && slotStartTime < appointmentEndTime) ||
-            // Slot ends during existing appointment
-            (slotEndTime > appointmentStartTime && slotEndTime <= appointmentEndTime) ||
-            // Existing appointment completely contains slot
-            (appointmentStartTime <= slotStartTime && appointmentEndTime >= slotEndTime) ||
-            // Slot ends exactly when appointment starts (edge case)
-            (slotEndTime === appointmentStartTime) ||
-            // Slot starts exactly when appointment ends (edge case)
-            (slotStartTime === appointmentEndTime) ||
-            // Slot completely contains existing appointment (duration conflict)
-            (slotStartTime <= appointmentStartTime && slotEndTime >= appointmentEndTime)
-          );
-        });
 
-        // Determine if this is a direct conflict (slot overlaps with appointment) 
-        // or a duration conflict (slot would extend into an appointment)
-        let conflictType = null;
-        let isOccupied = false;
-        
-        if (conflictingAppointment) {
-          const appointmentStartTime = new Date(conflictingAppointment.startTime).getTime();
-          const appointmentEndTime = new Date(conflictingAppointment.endTime).getTime();
-          
-          // Check for direct overlap (slot starts or ends during the appointment)
-          const hasDirectOverlap = (
-            (slotStartTime >= appointmentStartTime && slotStartTime < appointmentEndTime) ||
-            (slotEndTime > appointmentStartTime && slotEndTime < appointmentEndTime) ||
-            (appointmentStartTime <= slotStartTime && appointmentEndTime >= slotEndTime)
-          );
-
-          // Check for duration conflict (slot contains appointment but doesn't directly overlap)
-          const hasDurationConflict = (
-            (slotStartTime <= appointmentStartTime && slotEndTime >= appointmentEndTime) ||
-            (slotEndTime === appointmentStartTime) ||
-            (slotStartTime === appointmentEndTime)
-          );
-
-          if (hasDirectOverlap && !hasDurationConflict) {
-            // Direct conflict: slot actually overlaps with appointment time
+          // Rule 1: If slot start time is within an existing appointment → OCCUPIED (red)
+          if (
+            slotStartTime >= appointmentStartTime &&
+            slotStartTime < appointmentEndTime
+          ) {
             conflictType = 'occupied';
             isOccupied = true;
-          } else {
-            // Duration conflict: slot would conflict due to service duration
+            conflictingAppointment = appointment;
+            break; // Found direct conflict, no need to check further
+          }
+
+          // Rule 2: If slot end time would extend into an existing appointment → DURATION_CONFLICT (orange)
+          if (
+            slotEndTime > appointmentStartTime &&
+            slotEndTime <= appointmentEndTime
+          ) {
             conflictType = 'duration_conflict';
             isOccupied = false;
+            conflictingAppointment = appointment;
+            break; // Found duration conflict, no need to check further
+          }
+
+          // Rule 3: If existing appointment is completely within the slot → DURATION_CONFLICT (orange)
+          if (
+            appointmentStartTime >= slotStartTime &&
+            appointmentEndTime <= slotEndTime
+          ) {
+            conflictType = 'duration_conflict';
+            isOccupied = false;
+            conflictingAppointment = appointment;
+            break; // Found duration conflict, no need to check further
           }
         }
 
@@ -452,10 +472,12 @@ export class AppointmentsService {
           isAvailable: !conflictingAppointment,
           isOccupied: isOccupied,
           conflictType: conflictType,
-          conflictingAppointment: conflictingAppointment ? {
-            startTime: conflictingAppointment.startTime,
-            endTime: conflictingAppointment.endTime,
-          } : null,
+          conflictingAppointment: conflictingAppointment
+            ? {
+                startTime: conflictingAppointment.startTime,
+                endTime: conflictingAppointment.endTime,
+              }
+            : null,
         };
 
         allSlots.push(slot);
@@ -475,7 +497,11 @@ export class AppointmentsService {
     };
   }
 
-  async getAppointmentsByDateRange(companyId: string, startDate: string, endDate: string) {
+  async getAppointmentsByDateRange(
+    companyId: string,
+    startDate: string,
+    endDate: string,
+  ) {
     return this.prisma.appointment.findMany({
       where: {
         companyId,

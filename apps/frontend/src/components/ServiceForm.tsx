@@ -168,7 +168,7 @@ export function ServiceForm({ service, onSubmit, onCancel }: ServiceFormProps) {
               name="isActive"
               checked={formData.isActive}
               onChange={handleChange}
-              className="h-4 w-4 text-purple-800 focus:ring-purple-500 border-gray-300 rounded"
+              className="h-4 w-4 text-zinc-800 focus:ring-zinc-500 border-gray-300 rounded"
             />
             <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
               Service is active and available for booking

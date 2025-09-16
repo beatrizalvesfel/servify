@@ -123,8 +123,8 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Tag className="h-6 w-6 text-green-600" />
+              <div className="p-2 bg-zinc-100 rounded-lg">
+                <Tag className="h-6 w-6 text-zinc-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Services</p>
@@ -137,8 +137,8 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-6 w-6 text-purple-800" />
+              <div className="p-2 bg-zinc-100 rounded-lg">
+                <Users className="h-6 w-6 text-zinc-800" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Professionals</p>

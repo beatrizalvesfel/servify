@@ -11,7 +11,7 @@ export default function HomePage() {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-zinc-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">S</span>
             </div>
             <span className="text-xl font-bold text-gray-900">Servify</span>
@@ -26,18 +26,17 @@ export default function HomePage() {
               <Button variant="ghost">Sign In</Button>
             </Link>
             <Link href="/auth/register">
-              <Button className="bg-purple-800 text-zinc-50">Get Started</Button>
+              <Button className="bg-zinc-800 text-zinc-50">Get Started</Button>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4 bg-purple-800">
+      <section className="py-20 px-4 bg-zinc-800">
         <div className="container mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-zinc-50 mb-6">
-            Build Your SaaS
-            <span className="text-orange-400"> Platform</span>
+            Build Your SaaS Platform
           </h1>
           <p className="text-xl text-zinc-50 mb-8 max-w-2xl mx-auto">
             A complete whitelabel SaaS platform with authentication, user management, 
@@ -74,8 +73,8 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <Zap className="h-6 w-6 text-purple-800" />
+                <div className="w-12 h-12 bg-zinc-100 rounded-lg flex items-center justify-center mb-4">
+                  <Zap className="h-6 w-6 text-zinc-800" />
                 </div>
                 <CardTitle>Lightning Fast</CardTitle>
                 <CardDescription>
@@ -98,8 +97,8 @@ export default function HomePage() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="h-6 w-6 text-purple-800" />
+                <div className="w-12 h-12 bg-zinc-100 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="h-6 w-6 text-zinc-800" />
                 </div>
                 <CardTitle>Multi-tenant</CardTitle>
                 <CardDescription>
@@ -116,19 +115,19 @@ export default function HomePage() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-purple-800 mb-2">99.9%</div>
+              <div className="text-4xl font-bold text-zinc-800 mb-2">99.9%</div>
               <div className="text-gray-600">Uptime</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-purple-800 mb-2">10k+</div>
+              <div className="text-4xl font-bold text-zinc-800 mb-2">10k+</div>
               <div className="text-gray-600">Active Users</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-purple-800 mb-2">50+</div>
+              <div className="text-4xl font-bold text-zinc-800 mb-2">50+</div>
               <div className="text-gray-600">Integrations</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-purple-800 mb-2">24/7</div>
+              <div className="text-4xl font-bold text-zinc-800 mb-2">24/7</div>
               <div className="text-gray-600">Support</div>
             </div>
           </div>
@@ -136,16 +135,16 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-purple-800">
+      <section className="py-20 px-4 bg-zinc-800">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to get started?
           </h2>
-          <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-zinc-100 mb-8 max-w-2xl mx-auto">
             Join thousands of businesses already using Servify to power their SaaS platforms.
           </p>
           <Link href="/auth/register">
-            <Button size="lg" variant="secondary" className="bg-white text-purple-800 hover:bg-gray-100">
+            <Button size="lg" variant="secondary" className="bg-white text-zinc-800 hover:bg-gray-100">
               Start Your Free Trial
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -159,7 +158,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-zinc-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">S</span>
                 </div>
                 <span className="text-xl font-bold">Servify</span>

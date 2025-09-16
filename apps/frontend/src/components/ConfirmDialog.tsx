@@ -45,7 +45,7 @@ export function ConfirmDialog({
             <div className={`p-2 rounded-full ${
               variant === 'destructive' 
                 ? 'bg-red-100 text-red-600' 
-                : 'bg-zinc-100 text-purple-800'
+                : 'bg-zinc-100 text-zinc-800'
             }`}>
               <AlertTriangle className="h-5 w-5" />
             </div>

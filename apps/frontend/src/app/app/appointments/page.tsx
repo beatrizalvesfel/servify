@@ -110,7 +110,7 @@ export default function AppointmentsPage() {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
       case 'CONFIRMED': return 'bg-green-100 text-green-800';
       case 'CANCELLED': return 'bg-red-100 text-red-800';
-      case 'COMPLETED': return 'bg-purple-100 text-zinc-800';
+      case 'COMPLETED': return 'bg-zinc-100 text-zinc-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -156,7 +156,7 @@ export default function AppointmentsPage() {
             variant={view === 'calendar' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setView('calendar')}
-            className="flex items-center gap-2 bg-purple-800 hover:bg-purple-900"
+            className="flex items-center gap-2"
           >
             <Calendar className="h-4 w-4" />
             Calendar

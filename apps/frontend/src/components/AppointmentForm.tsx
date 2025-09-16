@@ -446,7 +446,7 @@ export function AppointmentForm({
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1 bg-purple-800 text-white hover:bg-purple-900"  disabled={loading}>
+            <Button type="submit" className="flex-1 bg-zinc-800 text-white hover:bg-zinc-900"  disabled={loading}>
               {loading ? 'Loading...' : (appointment ? 'Update Appointment' : 'Create Appointment')}
             </Button>
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
