@@ -60,10 +60,18 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    setUser(null);
-    router.push('/');
+  const logout = async () => {
+    try {
+      // Call backend logout endpoint
+      await apiClient.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Always clear local storage and redirect
+      localStorage.removeItem('auth_token');
+      setUser(null);
+      router.push('/');
+    }
   };
 
   return {

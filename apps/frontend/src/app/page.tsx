@@ -35,10 +35,6 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
-          <Badge variant="secondary" className="mb-4">
-            <Sparkles className="w-3 h-3 mr-1" />
-            New: AI-Powered Analytics
-          </Badge>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             Build Your SaaS
             <span className="text-blue-600"> Platform</span>

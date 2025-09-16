@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcryptjs';
@@ -10,23 +10,32 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(
+    email: string,
+    password: string,
+    companyId?: string,
+  ): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (user && (await bcrypt.compare(password, user.password))) {
-      const { password, ...result } = user;
+      // If companyId is provided, validate that user belongs to that company
+      if (companyId && user.companyId !== companyId) {
+        return null; // User doesn't belong to this company
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...result } = user;
       return result;
     }
     return null;
   }
 
   async login(user: any) {
-    const payload = { 
-      email: user.email, 
+    const payload = {
+      email: user.email,
       sub: user.id,
       companyId: user.companyId,
       role: user.role,
     };
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -40,7 +49,13 @@ export class AuthService {
     };
   }
 
-  async register(email: string, password: string, firstName: string, lastName: string, companyId: string) {
+  async register(
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    companyId: string,
+  ) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await this.usersService.create({
       email,
@@ -51,5 +66,17 @@ export class AuthService {
     });
 
     return this.login(user);
+  }
+
+  async logout(userId: string) {
+    // Update lastLoginAt to track logout time
+    await this.usersService.update(userId, {
+      lastLoginAt: new Date(),
+    });
+
+    return {
+      message: 'Logout realizado com sucesso',
+      timestamp: new Date().toISOString(),
+    };
   }
 }

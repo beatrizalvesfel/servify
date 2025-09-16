@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
@@ -24,7 +25,12 @@ export class CompaniesController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Request() req) {
+    // Se há tenant no request (subdomínio), retorna apenas essa empresa
+    if (req.tenant) {
+      return this.companiesService.findOne(req.tenant.id);
+    }
+    // Senão, retorna todas (para admin global)
     return this.companiesService.findAll();
   }
 

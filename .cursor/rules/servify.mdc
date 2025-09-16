@@ -1,0 +1,74 @@
+---
+alwaysApply: true
+---
+
+Este projeto é um SaaS whitelabel construído com as seguintes tecnologias:
+
+Frontend:
+- Next.js (com Vite)
+- Tailwind CSS
+- shadcn/ui para componentes de UI
+- magic-ui para animações
+
+Backend:
+- Nest.js
+- Prisma ORM com banco de dados PostgreSQL
+- Autenticação integrada com Clerk (login por e-mail e Google)
+
+Objetivos:
+- Criar um sistema SaaS whitelabel voltado inicialmente para barbearias, mas com estrutura flexível para clínicas, estúdios, profissionais liberais, etc.
+- Todo o sistema deve ser multi-tenant: empresas isoladas com subdomínios, configurações, clientes e dados independentes.
+- Código limpo, modular e com foco em escalabilidade. Evite hardcode, duplicação ou lógica acoplada.
+- Pensar sempre em futuras adaptações de funcionalidades para outros nichos.
+
+Diretrizes:
+- Sempre priorizar reuso de componentes no frontend.
+- Evite criar lógica ou banco que dependa exclusivamente do nicho "barbearia". Use termos genéricos como “empresa”, “cliente”, “profissional”, “serviço”.
+- Toda lógica deve suportar múltiplas empresas com dados isolados (multi-tenant).
+- Quando possível, implemente com extensibilidade em mente (ex: tipos de serviço, categorias, templates configuráveis).
+- Evite criação de código com dados fixos. Prefira buscar configurações no banco, com fallback padrão.
+- Não gerar código experimental nem recursos incompletos sem aviso.
+
+Workflow:
+- Gerar código completo por módulo (ex: auth, agenda, clientes) e com exemplos de uso.
+- Usar estrutura de pastas clara e separada por domínio.
+- Priorizar clareza e legibilidade ao invés de otimizações prematuras.
+
+Resultado esperado:
+Um MVP funcional, modular, escalável, com arquitetura clara e sem retrabalho. O sistema deve ser fácil de manter e evoluir para outros nichos no futuro.
+
+Este projeto é um SaaS whitelabel construído com as seguintes tecnologias:
+
+Frontend:
+- Next.js (com Vite)
+- Tailwind CSS
+- shadcn/ui para componentes de UI
+- magic-ui para animações
+
+Backend:
+- Nest.js
+- Prisma ORM com banco de dados PostgreSQL
+- Autenticação integrada com Clerk (login por e-mail e Google)
+
+Objetivos:
+- Criar um sistema SaaS whitelabel voltado inicialmente para barbearias, mas com estrutura flexível para clínicas, estúdios, profissionais liberais, etc.
+- Todo o sistema deve ser multi-tenant: empresas isoladas com subdomínios, configurações, clientes e dados independentes.
+- Código limpo, modular e com foco em escalabilidade. Evite hardcode, duplicação ou lógica acoplada.
+- Pensar sempre em futuras adaptações de funcionalidades para outros nichos.
+
+Diretrizes:
+- Sempre priorizar reuso de componentes no frontend.
+- Evite criar lógica ou banco que dependa exclusivamente do nicho "barbearia". Use termos genéricos como “empresa”, “cliente”, “profissional”, “serviço”.
+- Toda lógica deve suportar múltiplas empresas com dados isolados (multi-tenant).
+- Quando possível, implemente com extensibilidade em mente (ex: tipos de serviço, categorias, templates configuráveis).
+- Evite criação de código com dados fixos. Prefira buscar configurações no banco, com fallback padrão.
+- Não gerar código experimental nem recursos incompletos sem aviso.
+
+Workflow:
+- Gerar código completo por módulo (ex: auth, agenda, clientes) e com exemplos de uso.
+- Usar estrutura de pastas clara e separada por domínio.
+- Priorizar clareza e legibilidade ao invés de otimizações prematuras.
+
+Resultado esperado:
+Um MVP funcional, modular, escalável, com arquitetura clara e sem retrabalho. O sistema deve ser fácil de manter e evoluir para outros nichos no futuro.
+

@@ -16,9 +16,17 @@ async function bootstrap() {
     }),
   );
 
-  // CORS configuration
+  // CORS configuration - Allow all localhost subdomains
   app.enableCors({
-    origin: configService.get('FRONTEND_URL', 'http://localhost:3000'),
+    origin: [
+      'http://localhost:3000',
+      'http://empresa1.localhost:3000',
+      'http://empresa2.localhost:3000',
+      'http://empresa3.localhost:3000',
+      'http://demo.localhost:3000',
+      'http://test.localhost:3000',
+      /^http:\/\/.*\.localhost:3000$/, // Allow any subdomain.localhost:3000
+    ],
     credentials: true,
   });
 
