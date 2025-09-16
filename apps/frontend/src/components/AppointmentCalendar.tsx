@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
-import { ChevronLeft, ChevronRight, Plus, Clock, User, Phone, Mail } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock, User, Phone, Mail, Check, X } from 'lucide-react';
 import { AppointmentForm } from './AppointmentForm';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface Appointment {
   id: string;
@@ -44,6 +45,19 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    appointment: Appointment | null;
+  }>({ open: false, appointment: null });
+  const [statusDialog, setStatusDialog] = useState<{
+    open: boolean;
+    appointment: Appointment | null;
+    action: 'confirm' | 'cancel';
+  }>({
+    open: false,
+    appointment: null,
+    action: 'confirm',
+  });
 
   useEffect(() => {
     loadAppointments();
@@ -64,7 +78,9 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
       if (serviceId) filters.serviceId = serviceId;
       
       const data = await apiClient.getAppointments(filters);
-      setAppointments(data);
+      // Filter out cancelled appointments
+      const filteredData = data.filter((appointment: Appointment) => appointment.status !== 'CANCELLED');
+      setAppointments(filteredData);
     } catch (error) {
       console.error('Error loading appointments:', error);
     } finally {
@@ -93,14 +109,43 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
     }
   };
 
-  const handleDeleteAppointment = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this appointment?')) return;
-    
+  const handleDeleteAppointment = async (appointment: Appointment) => {
     try {
-      await apiClient.deleteAppointment(id);
+      await apiClient.deleteAppointment(appointment.id);
       await loadAppointments();
     } catch (error) {
       console.error('Error deleting appointment:', error);
+    }
+  };
+
+  const openDeleteDialog = (appointment: Appointment) => {
+    setDeleteDialog({ open: true, appointment });
+  };
+
+  const openStatusDialog = (appointment: Appointment, action: 'confirm' | 'cancel') => {
+    setStatusDialog({ open: true, appointment, action });
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!statusDialog.appointment) return;
+    
+    try {
+      const newStatus = statusDialog.action === 'confirm' ? 'CONFIRMED' : 'CANCELLED';
+      await apiClient.updateAppointmentStatus(statusDialog.appointment.id, newStatus);
+      
+      // Update the appointment in the local state
+      setAppointments(prev => 
+        prev.map(appointment => 
+          appointment.id === statusDialog.appointment!.id 
+            ? { ...appointment, status: newStatus as any }
+            : appointment
+        )
+      );
+      
+      setStatusDialog({ open: false, appointment: null, action: 'confirm' });
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      alert('Erro ao atualizar status do agendamento');
     }
   };
 
@@ -118,7 +163,7 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
       case 'CONFIRMED': return 'bg-green-100 text-green-800';
       case 'CANCELLED': return 'bg-red-100 text-red-800';
-      case 'COMPLETED': return 'bg-blue-100 text-blue-800';
+      case 'COMPLETED': return 'bg-zinc-100 text-zinc-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -242,26 +287,30 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
               return (
                 <div
                   key={date.toISOString()}
-                  className={`h-24 border-r border-b last:border-r-0 p-2 cursor-pointer hover:bg-gray-50 ${
-                    isToday ? 'bg-blue-50' : ''
+                  className={`overflow-y-auto h-24 border-r border-b last:border-r-0 p-2 cursor-pointer hover:bg-gray-50 ${
+                    isToday ? 'bg-zinc-50' : ''
                   }`}
                   onClick={() => handleDateClick(date)}
                 >
-                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-zinc-600' : 'text-gray-900'}`}>
                     {date.getDate()}
                   </div>
                   <div className="space-y-1">
                     {dayAppointments.slice(0, 2).map(appointment => (
                       <div
                         key={appointment.id}
-                        className={`text-xs p-1 rounded truncate cursor-pointer ${getStatusColor(appointment.status)}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingAppointment(appointment);
-                          setShowForm(true);
-                        }}
+                        className={`text-xs p-1 rounded ${getStatusColor(appointment.status)}`}
                       >
-                        {formatTime(appointment.startTime)} - {appointment.clientName}
+                        <div
+                          className="truncate cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingAppointment(appointment);
+                            setShowForm(true);
+                          }}
+                        >
+                          {formatTime(appointment.startTime)} - {appointment.clientName}
+                        </div>
                       </div>
                     ))}
                     {dayAppointments.length > 2 && (
@@ -299,6 +348,33 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open, appointment: null })}
+        title="Delete Appointment"
+        description={`Are you sure you want to delete the appointment with "${deleteDialog.appointment?.clientName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={() => deleteDialog.appointment && handleDeleteAppointment(deleteDialog.appointment)}
+      />
+
+      {/* Status Update Confirmation Dialog */}
+      <ConfirmDialog
+        open={statusDialog.open}
+        onOpenChange={(open) => setStatusDialog(prev => ({ ...prev, open }))}
+        title={statusDialog.action === 'confirm' ? 'Confirmar Agendamento' : 'Cancelar Agendamento'}
+        description={
+          statusDialog.action === 'confirm'
+            ? `Tem certeza que deseja confirmar o agendamento de ${statusDialog.appointment?.clientName}?`
+            : `Tem certeza que deseja cancelar o agendamento de ${statusDialog.appointment?.clientName}? O horário ficará disponível novamente.`
+        }
+        confirmText={statusDialog.action === 'confirm' ? 'Confirmar' : 'Cancelar'}
+        cancelText="Cancelar"
+        variant={statusDialog.action === 'confirm' ? 'default' : 'destructive'}
+        onConfirm={handleStatusUpdate}
+      />
     </div>
   );
 }

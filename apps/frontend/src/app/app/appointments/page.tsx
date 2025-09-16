@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
 import { AppointmentCalendar } from '@/components/AppointmentCalendar';
-import { Plus, Calendar, List, Filter } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Plus, Calendar, List, Filter, Check, X } from 'lucide-react';
 
 interface Appointment {
   id: string;
@@ -41,20 +42,66 @@ export default function AppointmentsPage() {
     serviceId: '',
     status: '',
   });
+  const [showCancelled, setShowCancelled] = useState(false);
+  const [statusDialog, setStatusDialog] = useState<{
+    open: boolean;
+    appointmentId: string;
+    clientName: string;
+    action: 'confirm' | 'cancel';
+  }>({
+    open: false,
+    appointmentId: '',
+    clientName: '',
+    action: 'confirm',
+  });
 
   useEffect(() => {
     loadAppointments();
-  }, [filters]);
+  }, [filters, showCancelled]);
 
   const loadAppointments = async () => {
     try {
       setLoading(true);
       const data = await apiClient.getAppointments(filters);
-      setAppointments(data);
+      // Filter out cancelled appointments if showCancelled is false
+      const filteredData = showCancelled 
+        ? data 
+        : data.filter((appointment: Appointment) => appointment.status !== 'CANCELLED');
+      setAppointments(filteredData);
     } catch (error) {
       console.error('Error loading appointments:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openStatusDialog = (appointmentId: string, clientName: string, action: 'confirm' | 'cancel') => {
+    setStatusDialog({
+      open: true,
+      appointmentId,
+      clientName,
+      action,
+    });
+  };
+
+  const handleStatusUpdate = async () => {
+    try {
+      const newStatus = statusDialog.action === 'confirm' ? 'CONFIRMED' : 'CANCELLED';
+      await apiClient.updateAppointmentStatus(statusDialog.appointmentId, newStatus);
+      
+      // Update the appointment in the local state
+      setAppointments(prev => 
+        prev.map(appointment => 
+          appointment.id === statusDialog.appointmentId 
+            ? { ...appointment, status: newStatus as any }
+            : appointment
+        )
+      );
+      
+      setStatusDialog({ open: false, appointmentId: '', clientName: '', action: 'confirm' });
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      alert('Erro ao atualizar status do agendamento');
     }
   };
 
@@ -63,7 +110,7 @@ export default function AppointmentsPage() {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
       case 'CONFIRMED': return 'bg-green-100 text-green-800';
       case 'CANCELLED': return 'bg-red-100 text-red-800';
-      case 'COMPLETED': return 'bg-blue-100 text-blue-800';
+      case 'COMPLETED': return 'bg-purple-100 text-zinc-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -109,7 +156,7 @@ export default function AppointmentsPage() {
             variant={view === 'calendar' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setView('calendar')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-purple-800 hover:bg-purple-900"
           >
             <Calendar className="h-4 w-4" />
             Calendar
@@ -183,6 +230,19 @@ export default function AppointmentsPage() {
                   </select>
                 </div>
               </div>
+              <div className="mt-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={showCancelled}
+                    onChange={(e) => setShowCancelled(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Mostrar agendamentos cancelados
+                  </span>
+                </label>
+              </div>
             </CardContent>
           </Card>
 
@@ -244,6 +304,52 @@ export default function AppointmentsPage() {
                           </div>
                         )}
                       </div>
+                      <div className="flex flex-col gap-2">
+                        {appointment.status === 'PENDING' && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 border-green-600 hover:bg-green-50"
+                              onClick={() => openStatusDialog(appointment.id, appointment.clientName, 'confirm')}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Confirmar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-600 hover:bg-red-50"
+                              onClick={() => openStatusDialog(appointment.id, appointment.clientName, 'cancel')}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Cancelar
+                            </Button>
+                          </>
+                        )}
+                        {appointment.status === 'CONFIRMED' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                            onClick={() => openStatusDialog(appointment.id, appointment.clientName, 'cancel')}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Cancelar
+                          </Button>
+                        )}
+                        {appointment.status === 'CANCELLED' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                            onClick={() => openStatusDialog(appointment.id, appointment.clientName, 'confirm')}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Reagendar
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -252,6 +358,22 @@ export default function AppointmentsPage() {
           )}
         </div>
       )}
+
+      {/* Status Update Confirmation Dialog */}
+      <ConfirmDialog
+        open={statusDialog.open}
+        onOpenChange={(open) => setStatusDialog(prev => ({ ...prev, open }))}
+        title={statusDialog.action === 'confirm' ? 'Confirmar Agendamento' : 'Cancelar Agendamento'}
+        description={
+          statusDialog.action === 'confirm'
+            ? `Tem certeza que deseja confirmar o agendamento de ${statusDialog.clientName}?`
+            : `Tem certeza que deseja cancelar o agendamento de ${statusDialog.clientName}? O horário ficará disponível novamente.`
+        }
+        confirmText={statusDialog.action === 'confirm' ? 'Confirmar' : 'Cancelar'}
+        cancelText="Cancelar"
+        variant={statusDialog.action === 'confirm' ? 'default' : 'destructive'}
+        onConfirm={handleStatusUpdate}
+      />
     </div>
   );
 }

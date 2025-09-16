@@ -28,11 +28,11 @@ export class CreateAppointmentDto {
   @IsString()
   notes?: string;
 
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   serviceId: string;
 
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   professionalId: string;
 }

@@ -109,8 +109,8 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="h-6 w-6 text-blue-600" />
+              <div className="p-2 bg-zinc-100 rounded-lg">
+                <Calendar className="h-6 w-6 text-zinc-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Appointments</p>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-6 w-6 text-purple-600" />
+                <Users className="h-6 w-6 text-purple-800" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Professionals</p>
@@ -198,9 +198,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.completedAppointments}</p>
+                <p className="text-2xl font-bold text-zinc-600">{stats.completedAppointments}</p>
               </div>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              <Badge variant="secondary" className="bg-zinc-100 text-zinc-800">
                 Completed
               </Badge>
             </div>

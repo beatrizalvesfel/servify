@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
 import { Plus, Edit, Trash2, Mail, Phone, Percent, Calendar } from 'lucide-react';
 import { ProfessionalForm } from '@/components/ProfessionalForm';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface Professional {
   id: string;
@@ -25,6 +26,10 @@ export default function ProfessionalsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    professional: Professional | null;
+  }>({ open: false, professional: null });
 
   useEffect(() => {
     loadProfessionals();
@@ -62,15 +67,17 @@ export default function ProfessionalsPage() {
     }
   };
 
-  const handleDeleteProfessional = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this professional?')) return;
-    
+  const handleDeleteProfessional = async (professional: Professional) => {
     try {
-      await apiClient.deleteProfessional(id);
+      await apiClient.deleteProfessional(professional.id);
       await loadProfessionals();
     } catch (error) {
       console.error('Error deleting professional:', error);
     }
+  };
+
+  const openDeleteDialog = (professional: Professional) => {
+    setDeleteDialog({ open: true, professional });
   };
 
   if (loading) {
@@ -182,7 +189,7 @@ export default function ProfessionalsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteProfessional(professional.id)}
+                    onClick={() => openDeleteDialog(professional)}
                     className="text-red-600 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -193,6 +200,17 @@ export default function ProfessionalsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open, professional: null })}
+        title="Delete Professional"
+        description={`Are you sure you want to delete "${deleteDialog.professional?.name}"? This action cannot be undone and will remove all associated appointments.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={() => deleteDialog.professional && handleDeleteProfessional(deleteDialog.professional)}
+      />
     </div>
   );
 }

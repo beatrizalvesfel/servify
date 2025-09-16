@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { X } from 'lucide-react';
@@ -53,7 +53,7 @@ export function AppointmentForm({
     clientEmail: '',
     startTime: '',
     endTime: '',
-    status: 'PENDING' as const,
+    status: 'PENDING' as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
     notes: '',
     serviceId: '',
     professionalId: '',
@@ -62,6 +62,8 @@ export function AppointmentForm({
   const [services, setServices] = useState<any[]>([]);
   const [professionals, setProfessionals] = useState<any[]>([]);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [occupiedSlots, setOccupiedSlots] = useState<any[]>([]);
+  const [allSlots, setAllSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -81,15 +83,21 @@ export function AppointmentForm({
         serviceId: appointment.service.id,
         professionalId: appointment.professional.id,
       });
-    } else if (selectedDate) {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      setFormData(prev => ({
-        ...prev,
-        startTime: `${dateStr}T09:00:00`,
-        endTime: `${dateStr}T10:00:00`,
-      }));
+    } else {
+      // Reset form data for new appointment
+      setFormData({
+        clientName: '',
+        clientPhone: '',
+        clientEmail: '',
+        startTime: '',
+        endTime: '',
+        status: 'PENDING' as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
+        notes: '',
+        serviceId: '',
+        professionalId: '',
+      });
     }
-  }, [appointment, selectedDate]);
+  }, [appointment]);
 
   useEffect(() => {
     if (professionalId) {
@@ -113,31 +121,48 @@ export function AppointmentForm({
     }
   };
 
-  const loadAvailableSlots = async () => {
-    if (!formData.professionalId || !formData.serviceId || !formData.startTime) return;
+  const loadAvailableSlots = useCallback(async () => {
+    if (!formData.professionalId || !formData.serviceId || !selectedDate) return;
     
     try {
       setLoading(true);
-      const date = formData.startTime.split('T')[0];
+      const date = selectedDate.toISOString().split('T')[0];
       const slots = await apiClient.getAvailableSlots(
         formData.professionalId,
         formData.serviceId,
         date
       );
-      setAvailableSlots(slots);
+      
+      // Handle both old format (array) and new format (object)
+      if (Array.isArray(slots)) {
+        setAvailableSlots(slots);
+        setOccupiedSlots([]);
+        setAllSlots(slots);
+      } else {
+        setAvailableSlots((slots as any).available || []);
+        setOccupiedSlots((slots as any).occupied || []);
+        setAllSlots((slots as any).all || []);
+      }
     } catch (error) {
       console.error('Error loading available slots:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData.professionalId, formData.serviceId, selectedDate]);
 
   useEffect(() => {
     loadAvailableSlots();
-  }, [formData.professionalId, formData.serviceId, formData.startTime]);
+  }, [loadAvailableSlots]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate that a time slot is selected for new appointments
+    if (!appointment && (!formData.startTime || !formData.endTime)) {
+      alert('Please select a time slot');
+      return;
+    }
+    
     onSubmit(formData);
   };
 
@@ -156,25 +181,32 @@ export function AppointmentForm({
     setFormData(prev => ({
       ...prev,
       serviceId,
-      endTime: service ? 
+      endTime: service && prev.startTime ? 
         new Date(new Date(prev.startTime).getTime() + service.duration * 60000).toISOString() :
         prev.endTime,
     }));
   };
 
   const handleSlotSelect = (slot: any) => {
+    if (!selectedDate) return;
+    
+    // Combine selected date with slot time
+    const selectedDateStr = selectedDate.toISOString().split('T')[0];
+    const slotTime = slot.startTime.split('T')[1];
+    const slotEndTime = slot.endTime.split('T')[1];
+    
     setFormData(prev => ({
       ...prev,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
+      startTime: `${selectedDateStr}T${slotTime}`,
+      endTime: `${selectedDateStr}T${slotEndTime}`,
     }));
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
+    return new Date(dateString).toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
+      hour12: false,
     });
   };
 
@@ -287,56 +319,96 @@ export function AppointmentForm({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Selected Date Display */}
+          {selectedDate && (
             <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
-                Start Time *
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Data Selecionada
               </label>
-              <input
-                type="datetime-local"
-                id="startTime"
-                name="startTime"
-                value={formData.startTime}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
+                {selectedDate.toLocaleDateString('pt-BR', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </div>
             </div>
+          )}
 
-            <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
-                End Time *
-              </label>
-              <input
-                type="datetime-local"
-                id="endTime"
-                name="endTime"
-                value={formData.endTime}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Available Time Slots */}
-          {availableSlots.length > 0 && !appointment && (
+          {/* Time Slots */}
+          {selectedDate && formData.professionalId && formData.serviceId && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Available Time Slots
+                Horários Disponíveis
               </label>
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
-                {availableSlots.map((slot, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleSlotSelect(slot)}
-                    className="p-2 text-xs border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-500"
-                  >
-                    {formatTime(slot.startTime)}
-                  </button>
-                ))}
-              </div>
+              {loading ? (
+                <div className="text-center py-4 text-gray-500">Carregando horários...</div>
+              ) : allSlots.length > 0 ? (
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                  {allSlots.map((slot, index) => {
+                    const isSelected = formData.startTime && formData.startTime.includes(slot.startTime.split('T')[1]);
+                    const isAvailable = slot.isAvailable;
+                    const conflictType = slot.conflictType;
+                    
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => isAvailable && handleSlotSelect(slot)}
+                        disabled={!isAvailable}
+                        className={`p-2 text-xs border rounded gap-1 flex items-center justify-center transition-colors ${
+                          !isAvailable
+                            ? conflictType === 'occupied'
+                              ? 'bg-red-50 text-red-400 border-red-200 cursor-not-allowed'
+                              : 'bg-orange-50 text-orange-400 border-orange-200 cursor-not-allowed'
+                            : isSelected 
+                              ? 'bg-zinc-800 text-white border-zinc-800' 
+                              : 'border-zinc-300 hover:bg-zinc-50 hover:border-zinc-800'
+                        }`}
+                        title={!isAvailable ? (conflictType === 'occupied' ? 'Este horário já está ocupado' : 'Este horário não está disponível para este serviço') : ''}
+                      >
+                        {!isAvailable && (
+                          <span className={`text-xs ${conflictType === 'occupied' ? 'text-red-500' : 'text-orange-500'}`}>
+                            {conflictType === 'occupied' ? '●' : '⚠'}
+                          </span>
+                        )}
+                        {formatTime(slot.startTime)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  Nenhum horário disponível para esta data
+                </div>
+              )}
+              
+              {/* Legend */}
+              {allSlots.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-zinc-800 rounded"></div>
+                    <span>Selecionado</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded"></div>
+                    <span>Disponível</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-red-50 border border-red-200 rounded flex items-center justify-center">
+                      <span className="text-red-500 text-xs">●</span>
+                    </div>
+                    <span>Ocupado</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-orange-50 border border-orange-200 rounded flex items-center justify-center">
+                      <span className="text-orange-500 text-xs">⚠</span>
+                    </div>
+                    <span>Conflito de duração</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -374,7 +446,7 @@ export function AppointmentForm({
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={loading}>
+            <Button type="submit" className="flex-1 bg-purple-800 text-white hover:bg-purple-900"  disabled={loading}>
               {loading ? 'Loading...' : (appointment ? 'Update Appointment' : 'Create Appointment')}
             </Button>
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1">

@@ -56,7 +56,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">S</span>
             </div>
           </div>
@@ -65,7 +65,7 @@ export default function RegisterPage() {
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Or{' '}
-            <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/auth/login" className="font-medium text-zinc-600 hover:text-zinc-500">
               sign in to your existing account
             </Link>
           </p>
@@ -171,15 +171,15 @@ export default function RegisterPage() {
                   name="terms"
                   type="checkbox"
                   required
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-zinc-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
                   I agree to the{' '}
-                  <Link href="/terms" className="text-blue-600 hover:text-blue-500">
+                  <Link href="/terms" className="text-zinc-600 hover:text-zinc-500">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link href="/privacy" className="text-blue-600 hover:text-blue-500">
+                  <Link href="/privacy" className="text-zinc-600 hover:text-zinc-500">
                     Privacy Policy
                   </Link>
                 </label>
