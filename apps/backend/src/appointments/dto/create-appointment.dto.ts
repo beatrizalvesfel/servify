@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsDateString, IsEnum, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsDateString, IsEnum, IsUUID, ValidateIf } from 'class-validator';
 import { AppointmentStatus } from '@prisma/client';
 
 export class CreateAppointmentDto {
@@ -11,7 +11,8 @@ export class CreateAppointmentDto {
   clientPhone?: string;
 
   @IsOptional()
-  @IsEmail()
+  @ValidateIf((o) => o.clientEmail && o.clientEmail.trim() !== '')
+  @IsEmail({}, { message: 'Invalid email format' })
   clientEmail?: string;
 
   @IsDateString()
