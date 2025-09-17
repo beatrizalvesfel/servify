@@ -53,7 +53,11 @@ export function ServiceForm({ service, onSubmit, onCancel }: ServiceFormProps) {
         Object.entries(formData).filter(([key, value]) => {
           // Always include numeric fields and boolean fields
           if (key === 'price' || key === 'duration' || key === 'isActive') return true;
-          return value !== '' && value !== null && value !== undefined;
+          // For string fields, exclude empty strings
+          if (typeof value === 'string') {
+            return value.trim() !== '';
+          }
+          return value !== null && value !== undefined;
         })
       ) : formData;
     
