@@ -261,11 +261,11 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600">Confirmados</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.confirmedAppointments}</p>
+                  <p className="text-sm font-medium text-green-600">Completos</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.completedAppointments}</p>
                 </div>
                 <div className="p-2 bg-green-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-green-600" />
+                  <TrendingUp className="h-5 w-5 text-green-600" />
                 </div>
               </div>
             </CardContent>
@@ -275,11 +275,11 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600">Completos</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.completedAppointments}</p>
+                  <p className="text-sm font-medium text-blue-600">Confirmados</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.confirmedAppointments}</p>
                 </div>
                 <div className="p-2 bg-blue-100 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
             </CardContent>
