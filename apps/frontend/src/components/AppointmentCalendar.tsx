@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -59,11 +59,7 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
     action: 'confirm',
   });
 
-  useEffect(() => {
-    loadAppointments();
-  }, [currentDate, professionalId, serviceId]);
-
-  const loadAppointments = async () => {
+  const loadAppointments = useCallback(async () => {
     try {
       setLoading(true);
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -86,7 +82,11 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentDate, professionalId, serviceId]);
+
+  useEffect(() => {
+    loadAppointments();
+  }, [loadAppointments]);
 
   const handleCreateAppointment = async (appointmentData: any) => {
     try {
@@ -291,7 +291,9 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
               
               const dayAppointments = getAppointmentsForDate(date);
               const isToday = date.toDateString() === new Date().toDateString();
-              const isPastDate = date < new Date().setHours(0, 0, 0, 0);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const isPastDate = date < today;
               
               return (
                 <div
@@ -318,14 +320,18 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
                     {dayAppointments.slice(0, 2).map(appointment => (
                       <div
                         key={appointment.id}
-                        className={`text-xs p-1 rounded ${getStatusColor(appointment.status)}`}
+                        className={`text-xs p-1 rounded ${getStatusColor(appointment.status)} ${
+                          isPastDate ? 'opacity-50' : ''
+                        }`}
                       >
                         <div
-                          className="truncate cursor-pointer"
+                          className={`truncate ${isPastDate ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setEditingAppointment(appointment);
-                            setShowForm(true);
+                            if (!isPastDate) {
+                              setEditingAppointment(appointment);
+                              setShowForm(true);
+                            }
                           }}
                         >
                           {formatTime(appointment.startTime)} - {appointment.clientName}
@@ -333,7 +339,7 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
                       </div>
                     ))}
                     {dayAppointments.length > 2 && (
-                      <div className="text-xs text-gray-500">
+                      <div className={`text-xs ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
                         +{dayAppointments.length - 2} more
                       </div>
                     )}
