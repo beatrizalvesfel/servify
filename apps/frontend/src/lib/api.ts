@@ -110,9 +110,16 @@ class ApiClient {
   }
 
   async logout(): Promise<any> {
-    return this.request('/auth/logout', {
-      method: 'POST',
-    });
+    try {
+      return await this.request('/auth/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      // If logout fails (e.g., token expired), still return success
+      // The important thing is to clear local storage
+      console.warn('Logout API call failed, but continuing with local logout:', error);
+      return { message: 'Logout realizado com sucesso' };
+    }
   }
 
   // Services API

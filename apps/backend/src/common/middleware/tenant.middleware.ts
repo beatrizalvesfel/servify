@@ -16,6 +16,11 @@ export class TenantMiddleware implements NestMiddleware {
   constructor(private readonly prisma: PrismaService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
+    // Skip middleware for auth routes
+    if (req.path.startsWith('/api/v1/auth/')) {
+      return next();
+    }
+
     const host = req.headers.host || '';
     // Expecting subdomain.rootdomain[:port]
     const hostWithoutPort = host.split(':')[0];
