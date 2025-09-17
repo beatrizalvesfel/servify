@@ -226,6 +226,14 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
   };
 
   const handleDateClick = (date: Date) => {
+    // Don't allow clicking on past dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (date < today) {
+      return; // Do nothing for past dates
+    }
+    
     setSelectedDate(date);
     setShowForm(true);
   };
@@ -283,16 +291,27 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
               
               const dayAppointments = getAppointmentsForDate(date);
               const isToday = date.toDateString() === new Date().toDateString();
+              const isPastDate = date < new Date().setHours(0, 0, 0, 0);
               
               return (
                 <div
                   key={date.toISOString()}
-                  className={`overflow-y-auto h-24 border-r border-b last:border-r-0 p-2 cursor-pointer hover:bg-gray-50 ${
+                  className={`overflow-y-auto h-24 border-r border-b last:border-r-0 p-2 ${
+                    isPastDate 
+                      ? 'bg-gray-100 cursor-not-allowed opacity-50' 
+                      : 'cursor-pointer hover:bg-gray-50'
+                  } ${
                     isToday ? 'bg-zinc-50' : ''
                   }`}
                   onClick={() => handleDateClick(date)}
                 >
-                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-zinc-600' : 'text-gray-900'}`}>
+                  <div className={`text-sm font-medium mb-1 ${
+                    isPastDate 
+                      ? 'text-gray-400' 
+                      : isToday 
+                        ? 'text-zinc-600' 
+                        : 'text-gray-900'
+                  }`}>
                     {date.getDate()}
                   </div>
                   <div className="space-y-1">

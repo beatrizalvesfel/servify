@@ -102,6 +102,126 @@ async function main() {
     });
 
     console.log(`✅ Regular user created for ${company.name}:`, regularUser.email);
+
+    // Create sample services for each company
+    const services = [
+      {
+        name: 'Corte de Cabelo',
+        description: 'Corte de cabelo masculino',
+        price: 25.00,
+        duration: 30,
+        category: 'Cabelo',
+      },
+      {
+        name: 'Barba',
+        description: 'Aparar e modelar barba',
+        price: 15.00,
+        duration: 20,
+        category: 'Barba',
+      },
+      {
+        name: 'Corte + Barba',
+        description: 'Corte de cabelo e barba',
+        price: 35.00,
+        duration: 45,
+        category: 'Combo',
+      },
+    ];
+
+    const createdServices = [];
+    for (const serviceData of services) {
+      const service = await prisma.service.create({
+        data: {
+          ...serviceData,
+          companyId: company.id,
+        },
+      });
+      createdServices.push(service);
+    }
+    console.log(`✅ Services created for ${company.name}:`, createdServices.length);
+
+    // Create sample professionals for each company
+    const professionals = [
+      {
+        name: `João Silva - ${company.name}`,
+        email: `joao${companyNum}@${company.slug}.com`,
+        phone: '(11) 99999-0001',
+        commission: 50.00,
+      },
+      {
+        name: `Maria Santos - ${company.name}`,
+        email: `maria${companyNum}@${company.slug}.com`,
+        phone: '(11) 99999-0002',
+        commission: 45.00,
+      },
+    ];
+
+    const createdProfessionals = [];
+    for (const professionalData of professionals) {
+      const professional = await prisma.professional.create({
+        data: {
+          ...professionalData,
+          companyId: company.id,
+        },
+      });
+      createdProfessionals.push(professional);
+    }
+    console.log(`✅ Professionals created for ${company.name}:`, createdProfessionals.length);
+
+    // Create sample appointments for each company
+    const now = new Date();
+    const appointments = [
+      {
+        clientName: 'Cliente 1',
+        clientPhone: '(11) 99999-1001',
+        clientEmail: 'cliente1@email.com',
+        startTime: new Date(now.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
+        endTime: new Date(now.getTime() + 24 * 60 * 60 * 1000 + 30 * 60 * 1000), // Tomorrow + 30min
+        status: 'PENDING',
+        serviceId: createdServices[0].id,
+        professionalId: createdProfessionals[0].id,
+      },
+      {
+        clientName: 'Cliente 2',
+        clientPhone: '(11) 99999-1002',
+        clientEmail: 'cliente2@email.com',
+        startTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
+        endTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000 + 20 * 60 * 1000), // Day after tomorrow + 20min
+        status: 'CONFIRMED',
+        serviceId: createdServices[1].id,
+        professionalId: createdProfessionals[1].id,
+      },
+      {
+        clientName: 'Cliente 3',
+        clientPhone: '(11) 99999-1003',
+        clientEmail: 'cliente3@email.com',
+        startTime: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Yesterday
+        endTime: new Date(now.getTime() - 24 * 60 * 60 * 1000 + 45 * 60 * 1000), // Yesterday + 45min
+        status: 'COMPLETED',
+        serviceId: createdServices[2].id,
+        professionalId: createdProfessionals[0].id,
+      },
+      {
+        clientName: 'Cliente 4',
+        clientPhone: '(11) 99999-1004',
+        clientEmail: 'cliente4@email.com',
+        startTime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+        endTime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000), // 2 days ago + 30min
+        status: 'CANCELLED',
+        serviceId: createdServices[0].id,
+        professionalId: createdProfessionals[1].id,
+      },
+    ];
+
+    for (const appointmentData of appointments) {
+      await prisma.appointment.create({
+        data: {
+          ...appointmentData,
+          companyId: company.id,
+        },
+      });
+    }
+    console.log(`✅ Appointments created for ${company.name}:`, appointments.length);
   }
 
   console.log('🎉 Database seed completed successfully!');

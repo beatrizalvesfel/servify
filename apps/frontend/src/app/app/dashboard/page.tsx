@@ -28,6 +28,30 @@ interface DashboardStats {
   cancelledAppointments: number;
 }
 
+interface Appointment {
+  id: string;
+  clientName: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  startTime: string;
+  endTime: string;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+  notes?: string;
+  service: {
+    id: string;
+    name: string;
+    price: number;
+    duration: number;
+    category: string;
+  };
+  professional: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalAppointments: 0,
@@ -39,6 +63,7 @@ export default function DashboardPage() {
     completedAppointments: 0,
     cancelledAppointments: 0,
   });
+  const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,31 +73,49 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      
       const [appointments, services, professionals] = await Promise.all([
         apiClient.getAppointments(),
         apiClient.getServices(),
         apiClient.getProfessionals(),
       ]);
 
-      const totalRevenue = appointments
+      // Ensure we have arrays
+      const safeAppointments = Array.isArray(appointments) ? appointments : [];
+      const safeServices = Array.isArray(services) ? services : [];
+      const safeProfessionals = Array.isArray(professionals) ? professionals : [];
+
+      // Calculate total revenue from COMPLETED appointments only
+      const totalRevenue = safeAppointments
         .filter(apt => apt.status === 'COMPLETED')
-        .reduce((sum, apt) => sum + apt.service.price, 0);
+        .reduce((sum, apt) => sum + Number(apt.service?.price || 0), 0);
 
-      const appointmentStats = appointments.reduce((acc, apt) => {
-        acc[`${apt.status.toLowerCase()}Appointments`] = (acc[`${apt.status.toLowerCase()}Appointments`] || 0) + 1;
-        return acc;
-      }, {} as any);
+      // Count appointments by status - using direct filter approach
+      const pendingAppointments = safeAppointments.filter(apt => apt.status === 'PENDING').length;
+      const confirmedAppointments = safeAppointments.filter(apt => apt.status === 'CONFIRMED').length;
+      const completedAppointments = safeAppointments.filter(apt => apt.status === 'COMPLETED').length;
+      const cancelledAppointments = safeAppointments.filter(apt => apt.status === 'CANCELLED').length;
 
-      setStats({
-        totalAppointments: appointments.length,
-        totalServices: services.length,
-        totalProfessionals: professionals.length,
+      // Get recent appointments (last 10, sorted by start time)
+      const sortedAppointments = safeAppointments
+        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+        .slice(0, 10);
+
+      const finalStats = {
+        totalAppointments: safeAppointments.length,
+        totalServices: safeServices.length,
+        totalProfessionals: safeProfessionals.length,
         totalRevenue,
-        pendingAppointments: appointmentStats.pendingappointments || 0,
-        confirmedAppointments: appointmentStats.confirmedappointments || 0,
-        completedAppointments: appointmentStats.completedappointments || 0,
-        cancelledAppointments: appointmentStats.cancelledappointments || 0,
-      });
+        pendingAppointments,
+        confirmedAppointments,
+        completedAppointments,
+        cancelledAppointments,
+      };
+      
+      console.log('📊 Dashboard data loaded:', finalStats);
+      console.log('📊 Raw appointments:', safeAppointments);
+      setStats(finalStats);
+      setRecentAppointments(sortedAppointments);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -81,10 +124,37 @@ export default function DashboardPage() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'BRL',
     }).format(price);
+  };
+
+  const formatDateTime = (dateTime: string) => {
+    return new Date(dateTime).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      PENDING: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800' },
+      CONFIRMED: { label: 'Confirmado', className: 'bg-green-100 text-green-800' },
+      COMPLETED: { label: 'Completo', className: 'bg-blue-100 text-blue-800' },
+      CANCELLED: { label: 'Cancelado', className: 'bg-red-100 text-red-800' },
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING;
+    
+    return (
+      <Badge variant="secondary" className={config.className}>
+        {config.label}
+      </Badge>
+    );
   };
 
   if (loading) {
@@ -113,7 +183,7 @@ export default function DashboardPage() {
                 <Calendar className="h-6 w-6 text-zinc-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Appointments</p>
+                <p className="text-sm font-medium text-gray-600">Total de Agendamentos</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalAppointments}</p>
               </div>
             </div>
@@ -127,7 +197,7 @@ export default function DashboardPage() {
                 <Tag className="h-6 w-6 text-zinc-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Services</p>
+                <p className="text-sm font-medium text-gray-600">Serviços</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalServices}</p>
               </div>
             </div>
@@ -141,7 +211,7 @@ export default function DashboardPage() {
                 <Users className="h-6 w-6 text-zinc-800" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Professionals</p>
+                <p className="text-sm font-medium text-gray-600">Profissionais</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalProfessionals}</p>
               </div>
             </div>
@@ -151,11 +221,11 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <DollarSign className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-sm font-medium text-green-600">Receita Total</p>
                 <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.totalRevenue)}</p>
               </div>
             </div>
@@ -169,12 +239,9 @@ export default function DashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-sm font-medium text-yellow-600">Pendentes</p>
                 <p className="text-2xl font-bold text-yellow-600">{stats.pendingAppointments}</p>
               </div>
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                Pending
-              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -183,12 +250,9 @@ export default function DashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Confirmed</p>
+                <p className="text-sm font-medium text-green-600">Confirmados</p>
                 <p className="text-2xl font-bold text-green-600">{stats.confirmedAppointments}</p>
               </div>
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                Confirmed
-              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -197,12 +261,9 @@ export default function DashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-zinc-600">{stats.completedAppointments}</p>
+                <p className="text-sm font-medium text-blue-600">Completos</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.completedAppointments}</p>
               </div>
-              <Badge variant="secondary" className="bg-zinc-100 text-zinc-800">
-                Completed
-              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -211,12 +272,9 @@ export default function DashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Cancelled</p>
+                <p className="text-sm font-medium text-red-600">Cancelados</p>
                 <p className="text-2xl font-bold text-red-600">{stats.cancelledAppointments}</p>
               </div>
-              <Badge variant="secondary" className="bg-red-100 text-red-800">
-                Cancelled
-              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -228,24 +286,24 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Appointments
+              Agendamentos
             </CardTitle>
             <CardDescription>
-              Manage your appointment schedule and bookings
+              Gerencie sua agenda e reservas
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 flex flex-col ">
               <Link href="/app/appointments">
                 <Button className="w-full flex items-center justify-between">
-                  View Appointments
+                  Ver Agendamentos
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/app/appointments">
                 <Button variant="outline" className="w-full flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Schedule New
+                  Agendar Novo
                 </Button>
               </Link>
             </div>
@@ -256,24 +314,24 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Tag className="h-5 w-5" />
-              Services
+              Serviços
             </CardTitle>
             <CardDescription>
-              Manage your service offerings and pricing
+              Gerencie seus serviços e preços
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 flex flex-col">
               <Link href="/app/services">
                 <Button className="w-full flex items-center justify-between">
-                  View Services
+                  Ver Serviços
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/app/services">
                 <Button variant="outline" className="w-full flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Add Service
+                  Adicionar Serviço
                 </Button>
               </Link>
             </div>
@@ -284,24 +342,24 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Professionals
+              Profissionais
             </CardTitle>
             <CardDescription>
-              Manage your team of service professionals
+              Gerencie sua equipe de profissionais
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 flex flex-col">
               <Link href="/app/professionals">
                 <Button className="w-full flex items-center justify-between">
-                  View Professionals
+                  Ver Profissionais
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/app/professionals">
                 <Button variant="outline" className="w-full flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Add Professional
+                  Adicionar Profissional
                 </Button>
               </Link>
             </div>
