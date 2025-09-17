@@ -151,7 +151,7 @@ export default function ProfessionalsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-3 flex flex-col">
                   {professional.email && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Mail className="h-4 w-4" />

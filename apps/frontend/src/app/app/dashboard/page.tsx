@@ -235,7 +235,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-3 flex flex-col ">
               <Link href="/app/appointments">
                 <Button className="w-full flex items-center justify-between">
                   View Appointments
@@ -263,7 +263,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-3 flex flex-col">
               <Link href="/app/services">
                 <Button className="w-full flex items-center justify-between">
                   View Services
@@ -291,7 +291,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-3 flex flex-col">
               <Link href="/app/professionals">
                 <Button className="w-full flex items-center justify-between">
                   View Professionals

@@ -46,7 +46,18 @@ export function ServiceForm({ service, onSubmit, onCancel }: ServiceFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Filter out empty fields for updates
+    const submitData = service ? 
+      Object.fromEntries(
+        Object.entries(formData).filter(([key, value]) => {
+          // Always include numeric fields and boolean fields
+          if (key === 'price' || key === 'duration' || key === 'isActive') return true;
+          return value !== '' && value !== null && value !== undefined;
+        })
+      ) : formData;
+    
+    onSubmit(submitData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

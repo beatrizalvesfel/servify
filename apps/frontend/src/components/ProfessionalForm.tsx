@@ -41,7 +41,17 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Filter out empty fields for updates
+    const submitData = professional ? 
+      Object.fromEntries(
+        Object.entries(formData).filter(([key, value]) => {
+          if (key === 'commission') return true; // Always include commission
+          return value !== '' && value !== null && value !== undefined;
+        })
+      ) : formData;
+    
+    onSubmit(submitData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
