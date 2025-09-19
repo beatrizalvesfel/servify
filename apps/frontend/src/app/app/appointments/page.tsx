@@ -162,9 +162,9 @@ export default function AppointmentsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'CONFIRMED': return 'bg-green-100 text-green-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
       case 'CANCELLED': return 'bg-red-100 text-red-800';
-      case 'COMPLETED': return 'bg-blue-100 text-blue-800';
+      case 'CONFIRMED': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -393,8 +393,8 @@ export default function AppointmentsPage() {
                                 const getBarColor = (status: string) => {
                                   switch (status) {
                                     case 'PENDING': return 'bg-gradient-to-r from-yellow-400 to-yellow-500 border-yellow-600';
-                                    case 'CONFIRMED': return 'bg-gradient-to-r from-green-400 to-green-500 border-green-600';
-                                    case 'COMPLETED': return 'bg-gradient-to-r from-blue-400 to-blue-500 border-blue-600';
+                                    case 'COMPLETED': return 'bg-gradient-to-r from-green-400 to-green-500 border-green-600';
+                                    case 'CONFIRMED': return 'bg-gradient-to-r from-blue-400 to-blue-500 border-blue-600';
                                     case 'CANCELLED': return 'bg-gradient-to-r from-red-400 to-red-500 border-red-600';
                                     default: return 'bg-gradient-to-r from-gray-400 to-gray-500 border-gray-600';
                                   }
@@ -531,8 +531,8 @@ export default function AppointmentsPage() {
                         const getBarColor = (status: string) => {
                           switch (status) {
                             case 'PENDING': return 'bg-gradient-to-r from-yellow-400 to-yellow-500 border-yellow-600';
-                            case 'CONFIRMED': return 'bg-gradient-to-r from-green-400 to-green-500 border-green-600';
-                            case 'COMPLETED': return 'bg-gradient-to-r from-blue-400 to-blue-500 border-blue-600';
+                            case 'COMPLETED': return 'bg-gradient-to-r from-green-400 to-green-500 border-green-600';
+                            case 'CONFIRMED': return 'bg-gradient-to-r from-blue-400 to-blue-500 border-blue-600';
                             case 'CANCELLED': return 'bg-gradient-to-r from-red-400 to-red-500 border-red-600';
                             default: return 'bg-gradient-to-r from-gray-400 to-gray-500 border-gray-600';
                           }
