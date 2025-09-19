@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api';
 import { ChevronLeft, ChevronRight, Plus, Clock, User, Phone, Mail, Check, X } from 'lucide-react';
 import { AppointmentForm } from './AppointmentForm';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useGlobalData } from '@/hooks/useGlobalData';
 
 interface Appointment {
   id: string;
@@ -39,6 +40,7 @@ interface AppointmentCalendarProps {
 }
 
 export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCalendarProps) {
+  const { deleteAppointment } = useGlobalData();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,7 @@ export function AppointmentCalendar({ professionalId, serviceId }: AppointmentCa
 
   const handleDeleteAppointment = async (appointment: Appointment) => {
     try {
-      await apiClient.deleteAppointment(appointment.id);
+      await deleteAppointment(appointment.id);
       await loadAppointments();
     } catch (error) {
       console.error('Error deleting appointment:', error);

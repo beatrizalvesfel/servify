@@ -135,10 +135,16 @@ export class AppointmentsService {
       startDate?: string;
       endDate?: string;
     },
+    userRole?: string,
+    userProfessionalId?: string,
   ) {
     const where: any = { companyId };
 
-    if (filters?.professionalId) {
+    // If user is a professional, only show their appointments
+    if (userRole === 'USER' && userProfessionalId) {
+      where.professionalId = userProfessionalId;
+    } else if (filters?.professionalId) {
+      // Admin can filter by professional
       where.professionalId = filters.professionalId;
     }
 

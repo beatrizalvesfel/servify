@@ -3,8 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useGlobalData } from '@/hooks/useGlobalData';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Appointment {
   id: string;
@@ -47,28 +50,31 @@ export function AppointmentForm({
   onSubmit, 
   onCancel 
 }: AppointmentFormProps) {
+  const { services, professionals } = useGlobalData();
+  const { isAdmin, professionalId: userProfessionalId } = usePermissions();
+  
   const [formData, setFormData] = useState({
     clientName: '',
     clientPhone: '',
     clientEmail: '',
     startTime: '',
     endTime: '',
-    status: 'PENDING' as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
     notes: '',
     serviceId: '',
     professionalId: '',
   });
 
-  const [services, setServices] = useState<any[]>([]);
-  const [professionals, setProfessionals] = useState<any[]>([]);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [occupiedSlots, setOccupiedSlots] = useState<any[]>([]);
   const [allSlots, setAllSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadServicesAndProfessionals();
-  }, []);
+    // Initialize form data based on user permissions
+    if (!isAdmin && userProfessionalId) {
+      setFormData(prev => ({ ...prev, professionalId: userProfessionalId }));
+    }
+  }, [isAdmin, userProfessionalId]);
 
   useEffect(() => {
     if (appointment) {
@@ -78,7 +84,6 @@ export function AppointmentForm({
         clientEmail: appointment.clientEmail || '',
         startTime: appointment.startTime,
         endTime: appointment.endTime,
-        status: appointment.status,
         notes: appointment.notes || '',
         serviceId: appointment.service.id,
         professionalId: appointment.professional.id,
@@ -91,7 +96,6 @@ export function AppointmentForm({
         clientEmail: '',
         startTime: '',
         endTime: '',
-        status: 'PENDING' as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
         notes: '',
         serviceId: '',
         professionalId: '',
@@ -108,18 +112,6 @@ export function AppointmentForm({
     }
   }, [professionalId, serviceId]);
 
-  const loadServicesAndProfessionals = async () => {
-    try {
-      const [servicesData, professionalsData] = await Promise.all([
-        apiClient.getServices(),
-        apiClient.getProfessionals(),
-      ]);
-      setServices(servicesData);
-      setProfessionals(professionalsData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    }
-  };
 
   const loadAvailableSlots = useCallback(async () => {
     if (!formData.professionalId || !formData.serviceId || !selectedDate) return;
@@ -178,13 +170,27 @@ export function AppointmentForm({
     const serviceId = e.target.value;
     const service = services.find(s => s.id === serviceId);
     
-    setFormData(prev => ({
-      ...prev,
-      serviceId,
-      endTime: service && prev.startTime ? 
-        new Date(new Date(prev.startTime).getTime() + service.duration * 60000).toISOString() :
-        prev.endTime,
-    }));
+    setFormData(prev => {
+      // Only calculate endTime if we have both startTime and duration
+      let endTime = prev.endTime;
+      if (service && service.duration && prev.startTime) {
+        try {
+          const startDate = new Date(prev.startTime);
+          if (!isNaN(startDate.getTime())) {
+            const endDate = new Date(startDate.getTime() + service.duration * 60000);
+            endTime = endDate.toISOString();
+          }
+        } catch (error) {
+          console.error('Error calculating end time:', error);
+        }
+      }
+      
+      return {
+        ...prev,
+        serviceId,
+        endTime,
+      };
+    });
   };
 
   const handleSlotSelect = (slot: any) => {
@@ -228,46 +234,87 @@ export function AppointmentForm({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="professionalId" className="block text-sm font-medium text-gray-700 mb-1">
-                Professional *
-              </label>
-              <select
-                id="professionalId"
-                name="professionalId"
-                value={formData.professionalId}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Select Professional</option>
-                {professionals.map(professional => (
-                  <option key={professional.id} value={professional.id}>
-                    {professional.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isAdmin ? (
+              <div>
+                <label htmlFor="professionalId" className="block text-sm font-medium text-gray-700 mb-1">
+                  Professional *
+                </label>
+                <Select
+                  value={formData.professionalId}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, professionalId: value }))}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Professional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {professionals.map(professional => (
+                      <SelectItem key={professional.id} value={professional.id}>
+                        {professional.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Professional
+                </label>
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
+                  {professionals.find(p => p.id === userProfessionalId)?.name || 'You'}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  As a professional, appointments will be created for you
+                </p>
+              </div>
+            )}
 
             <div>
               <label htmlFor="serviceId" className="block text-sm font-medium text-gray-700 mb-1">
                 Service *
               </label>
-              <select
-                id="serviceId"
-                name="serviceId"
+              <Select
                 value={formData.serviceId}
-                onChange={handleServiceChange}
+                onValueChange={(value) => {
+                  const selectedService = services.find(s => s.id === value);
+                  if (selectedService) {
+                    setFormData(prev => {
+                      // Only calculate endTime if we have both startTime and duration
+                      let endTime = prev.endTime;
+                      if (selectedService.duration && prev.startTime) {
+                        try {
+                          const startDate = new Date(prev.startTime);
+                          if (!isNaN(startDate.getTime())) {
+                            const endDate = new Date(startDate.getTime() + selectedService.duration * 60000);
+                            endTime = endDate.toISOString();
+                          }
+                        } catch (error) {
+                          console.error('Error calculating end time:', error);
+                        }
+                      }
+                      
+                      return { 
+                        ...prev, 
+                        serviceId: value,
+                        endTime
+                      };
+                    });
+                  }
+                }}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">Select Service</option>
-                {services.map(service => (
-                  <option key={service.id} value={service.id}>
-                    {service.name} - ${service.price}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {services.map(service => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.name} - ${service.price}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -283,7 +330,7 @@ export function AppointmentForm({
                 value={formData.clientName}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
                 placeholder="Client's full name"
               />
             </div>
@@ -298,7 +345,7 @@ export function AppointmentForm({
                 name="clientPhone"
                 value={formData.clientPhone}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
                 placeholder="+1 (555) 123-4567"
               />
             </div>
@@ -314,7 +361,7 @@ export function AppointmentForm({
               name="clientEmail"
               value={formData.clientEmail}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
               placeholder="client@example.com"
             />
           </div>
@@ -412,23 +459,6 @@ export function AppointmentForm({
             </div>
           )}
 
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="PENDING">Pending</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="CANCELLED">Cancelled</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
-          </div>
 
           <div>
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
@@ -440,7 +470,7 @@ export function AppointmentForm({
               value={formData.notes}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
               placeholder="Additional notes or special requests..."
             />
           </div>

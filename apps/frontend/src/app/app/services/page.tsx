@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
-import { Plus, Edit, Trash2, Clock, DollarSign, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, Clock, DollarSign, Tag, AlertTriangle, X, User, Users } from 'lucide-react';
 import { ServiceForm } from '@/components/ServiceForm';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Service {
   id: string;
@@ -19,10 +20,16 @@ interface Service {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  professionalId?: string;
+  professional?: {
+    id: string;
+    name: string;
+  };
   appointments?: any[];
 }
 
 export default function ServicesPage() {
+  const { isAdmin, professionalId } = usePermissions();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -31,6 +38,7 @@ export default function ServicesPage() {
     open: boolean;
     service: Service | null;
   }>({ open: false, service: null });
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     loadServices();
@@ -70,10 +78,13 @@ export default function ServicesPage() {
 
   const handleDeleteService = async (service: Service) => {
     try {
+      setError('');
       await apiClient.deleteService(service.id);
       await loadServices();
-    } catch (error) {
+      setDeleteDialog({ open: false, service: null });
+    } catch (error: any) {
       console.error('Error deleting service:', error);
+      setError(error.message || 'Erro ao deletar serviço');
     }
   };
 
@@ -96,6 +107,17 @@ export default function ServicesPage() {
     }
     return `${mins}m`;
   };
+
+  // Filter services based on user permissions
+  const filteredServices = services.filter(service => {
+    if (isAdmin) {
+      // Admins can see all services
+      return true;
+    } else {
+      // Professionals can only see general services and their own services
+      return !service.professionalId || service.professionalId === professionalId;
+    }
+  });
 
   if (loading) {
     return (
@@ -120,6 +142,24 @@ export default function ServicesPage() {
         </Button>
       </div>
 
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">Erro:</span>
+            <span>{error}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setError('')}
+            className="text-red-600 hover:text-red-700 p-1"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {showForm && (
         <div className="mb-8">
           <ServiceForm
@@ -136,13 +176,16 @@ export default function ServicesPage() {
         </div>
       )}
 
-      {services.length === 0 ? (
+      {filteredServices.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Tag className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No services yet</h3>
             <p className="text-gray-600 text-center mb-4">
-              Create your first service to start managing appointments
+              {isAdmin 
+                ? 'Create your first service to start managing appointments' 
+                : 'Create your first service to start offering appointments to clients'
+              }
             </p>
             <Button onClick={() => setShowForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -152,7 +195,7 @@ export default function ServicesPage() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
+          {filteredServices.map((service) => (
             <Card key={service.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -181,6 +224,18 @@ export default function ServicesPage() {
                     <Tag className="h-4 w-4" />
                     <span>{service.category}</span>
                   </div>
+                  {service.professional && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <User className="h-4 w-4" />
+                      <span>{service.professional.name}</span>
+                    </div>
+                  )}
+                  {!service.professional && (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <Users className="h-4 w-4" />
+                      <span>General Service</span>
+                    </div>
+                  )}
                   {service.appointments && service.appointments.length > 0 && (
                     <div className="text-sm text-gray-600">
                       {service.appointments.length} appointment{service.appointments.length !== 1 ? 's' : ''}
@@ -188,24 +243,30 @@ export default function ServicesPage() {
                   )}
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingService(service);
-                      setShowForm(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openDeleteDialog(service)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {/* Only allow editing if user is admin or owns the service */}
+                  {(isAdmin || service.professionalId === professionalId) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingService(service);
+                        setShowForm(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {/* Only allow deleting if user is admin or owns the service */}
+                  {(isAdmin || service.professionalId === professionalId) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openDeleteDialog(service)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

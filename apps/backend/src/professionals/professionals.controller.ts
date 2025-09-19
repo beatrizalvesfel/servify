@@ -14,9 +14,10 @@ import { ProfessionalsService } from './professionals.service';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { UpdateProfessionalDto } from './dto/update-professional.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RequireRole } from '../auth/guards/role.guard';
 
 @Controller('professionals')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequireRole(['ADMIN']))
 export class ProfessionalsController {
   constructor(private readonly professionalsService: ProfessionalsService) {}
 

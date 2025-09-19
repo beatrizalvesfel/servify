@@ -11,6 +11,8 @@ interface User {
   lastName: string;
   role: string;
   companyId: string;
+  companySlug?: string;
+  professionalId?: string;
 }
 
 export function useAuth() {
@@ -25,11 +27,15 @@ export function useAuth() {
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('auth_token');
+      console.log('🔍 useAuth - Token found:', !!token);
       if (token) {
         const profile = await apiClient.getProfile();
+        console.log('🔍 useAuth - Profile loaded:', profile);
+        console.log('🔍 useAuth - professionalId:', profile?.professionalId);
         setUser(profile);
       }
     } catch (error) {
+      console.log('❌ useAuth - Error loading profile:', error);
       localStorage.removeItem('auth_token');
     } finally {
       setLoading(false);
@@ -41,6 +47,8 @@ export function useAuth() {
       const response = await apiClient.login(data);
       localStorage.setItem('auth_token', response.access_token);
       setUser(response.user);
+      
+      // Always redirect to app on current domain
       router.push('/app');
       return { success: true };
     } catch (error: any) {
@@ -53,6 +61,8 @@ export function useAuth() {
       const response = await apiClient.register(data);
       localStorage.setItem('auth_token', response.access_token);
       setUser(response.user);
+      
+      // Always redirect to app on current domain
       router.push('/app');
       return { success: true };
     } catch (error: any) {

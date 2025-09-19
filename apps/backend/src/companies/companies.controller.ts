@@ -53,4 +53,9 @@ export class CompaniesController {
   remove(@Param('id') id: string) {
     return this.companiesService.remove(id);
   }
+
+  @Post(':id/generate-registration-code')
+  generateRegistrationCode(@Param('id') id: string) {
+    return this.companiesService.generateRegistrationCode(id);
+  }
 }

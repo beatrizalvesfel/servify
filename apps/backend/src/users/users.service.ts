@@ -8,8 +8,19 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
+    if (!createUserDto.companyId) {
+      throw new Error('companyId is required');
+    }
+    
     return this.prisma.user.create({
-      data: createUserDto,
+      data: {
+        email: createUserDto.email,
+        password: createUserDto.password,
+        firstName: createUserDto.firstName,
+        lastName: createUserDto.lastName,
+        companyId: createUserDto.companyId,
+        lastLoginAt: createUserDto.lastLoginAt,
+      },
       include: {
         company: true,
       },
@@ -30,6 +41,7 @@ export class UsersService {
       where: { id },
       include: {
         company: true,
+        professional: true,
       },
     });
 
@@ -41,8 +53,12 @@ export class UsersService {
   }
 
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
+    // Find the first active user with this email
+    return this.prisma.user.findFirst({
+      where: { 
+        email,
+        isActive: true
+      },
       include: {
         company: true,
       },

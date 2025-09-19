@@ -38,7 +38,12 @@ export class ServicesController {
     if (category) {
       return this.servicesService.findByCategory(category, companyId);
     }
-    return this.servicesService.findAll(companyId);
+    
+    // Get user role and professional ID for filtering
+    const userRole = req.user?.role;
+    const professionalId = req.user?.professionalId; // We'll need to add this to the user model
+    
+    return this.servicesService.findAll(companyId, userRole, professionalId);
   }
 
   @Get(':id')

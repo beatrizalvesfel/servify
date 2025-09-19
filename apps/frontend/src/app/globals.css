@@ -67,3 +67,46 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Custom select styles to override browser defaults */
+  select:focus {
+    outline: none;
+    border-color: #71717a !important;
+    box-shadow: 0 0 0 2px rgba(113, 113, 122, 0.2) !important;
+  }
+  
+  /* Force zinc colors for all select options */
+  select option {
+    background-color: white !important;
+    color: #374151 !important;
+  }
+  
+  select option:checked,
+  select option:focus,
+  select option:hover,
+  select option:active {
+    background-color: #71717a !important;
+    color: white !important;
+  }
+  
+  /* Additional specificity for different browsers */
+  select option[selected] {
+    background-color: #71717a !important;
+    color: white !important;
+  }
+  
+  /* Specific styles for custom-select class */
+  .custom-select option {
+    background-color: white !important;
+    color: #374151 !important;
+  }
+  
+  .custom-select option:hover,
+  .custom-select option:focus,
+  .custom-select option:active,
+  .custom-select option:checked {
+    background-color: #71717a !important;
+    color: white !important;
+  }
+}

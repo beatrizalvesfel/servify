@@ -21,9 +21,6 @@ export class CreateAppointmentDto {
   @IsDateString()
   endTime: string;
 
-  @IsOptional()
-  @IsEnum(AppointmentStatus)
-  status?: AppointmentStatus;
 
   @IsOptional()
   @IsString()

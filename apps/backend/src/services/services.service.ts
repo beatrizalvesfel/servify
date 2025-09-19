@@ -27,9 +27,24 @@ export class ServicesService {
     });
   }
 
-  async findAll(companyId: string) {
+  async findAll(companyId: string, userRole?: string, professionalId?: string) {
+    // Build where clause based on user role
+    let whereClause: any = { companyId };
+
+    if (userRole === 'USER' && professionalId) {
+      // Professionals can only see general services (professionalId is null) or their own services
+      whereClause = {
+        companyId,
+        OR: [
+          { professionalId: null }, // General company services
+          { professionalId: professionalId }, // Their own services
+        ],
+      };
+    }
+    // Admins can see all services (no additional filtering)
+
     return this.prisma.service.findMany({
-      where: { companyId },
+      where: whereClause,
       include: {
         appointments: {
           select: {
@@ -38,6 +53,12 @@ export class ServicesService {
             endTime: true,
             status: true,
             clientName: true,
+          },
+        },
+        professional: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },

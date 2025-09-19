@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, Min, Max, MinLength } from 'class-validator';
 
 export class CreateProfessionalDto {
   @IsString()
@@ -8,6 +8,11 @@ export class CreateProfessionalDto {
   @IsEmail()
   @IsNotEmpty()
   email: string; // Required for login
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  password: string; // Required for login
 
   @IsOptional()
   @IsString()

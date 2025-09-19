@@ -34,4 +34,8 @@ export class UpdateServiceDto {
   @IsOptional()
   @IsBoolean({ message: 'isActive must be a boolean' })
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'Professional ID must be a valid string' })
+  professionalId?: string | null;
 }

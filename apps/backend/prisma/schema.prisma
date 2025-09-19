@@ -11,15 +11,17 @@ datasource db {
 }
 
 model Company {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  domain      String?  @unique
-  logo        String?
-  settings    Json?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String
+  slug                  String    @unique
+  domain                String?   @unique
+  logo                  String?
+  settings              Json?
+  registrationCode      String?   @unique
+  registrationCodeExpiresAt DateTime?
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   // Relations
   users         User[]
@@ -33,7 +35,7 @@ model Company {
 
 model User {
   id          String   @id @default(cuid())
-  email       String   @unique
+  email       String
   password    String
   firstName   String
   lastName    String
@@ -45,9 +47,13 @@ model User {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  professionalId  String? // Link to professional record if user is a professional
+  professional    Professional? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
 
+  // Unique constraint: email must be unique within the same company
+  @@unique([email, companyId])
   @@map("users")
 }
 
@@ -92,9 +98,11 @@ model Service {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  companyId     String
-  company       Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  appointments  Appointment[]
+  companyId       String
+  company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  professionalId  String? // Optional: if null, it's a general company service
+  professional    Professional? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
 
   @@map("services")
 }
@@ -113,6 +121,8 @@ model Professional {
   companyId     String
   company       Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   appointments  Appointment[]
+  services      Service[] // Services created by this professional
+  users         User[] // Users linked to this professional
 
   @@map("professionals")
 }

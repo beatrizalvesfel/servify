@@ -58,6 +58,22 @@ export class CompaniesService {
     return company;
   }
 
+  async findByRegistrationCode(registrationCode: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { registrationCode },
+      include: {
+        users: true,
+        invitations: true,
+      },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    return company;
+  }
+
   async update(id: string, updateCompanyDto: UpdateCompanyDto) {
     await this.findOne(id); // Check if company exists
 
@@ -76,6 +92,29 @@ export class CompaniesService {
 
     return this.prisma.company.delete({
       where: { id },
+    });
+  }
+
+  async generateRegistrationCode(id: string) {
+    const company = await this.findOne(id);
+    
+    // Generate a 8-character registration code
+    const registrationCode = Math.random().toString(36).substr(2, 8).toUpperCase();
+    
+    // Set expiration to 30 days from now
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 30);
+    
+    return this.prisma.company.update({
+      where: { id },
+      data: {
+        registrationCode,
+        registrationCodeExpiresAt: expirationDate,
+      },
+      include: {
+        users: true,
+        invitations: true,
+      },
     });
   }
 }

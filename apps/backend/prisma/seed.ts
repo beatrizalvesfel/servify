@@ -6,38 +6,30 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Create multiple companies for multi-tenant testing
+  // Create 2 companies for multi-tenant testing
   const companies = [
     {
-      name: 'Empresa Demo 1',
-      slug: 'empresa1',
-      domain: 'empresa1.localhost',
+      name: 'Barbearia Central',
+      slug: 'barbearia-central',
+      domain: 'barbearia-central.localhost',
     },
     {
-      name: 'Empresa Demo 2', 
-      slug: 'empresa2',
-      domain: 'empresa2.localhost',
-    },
-    {
-      name: 'Empresa Demo 3',
-      slug: 'empresa3', 
-      domain: 'empresa3.localhost',
-    },
-    {
-      name: 'Demo Company',
-      slug: 'demo',
-      domain: 'demo.localhost',
-    },
-    {
-      name: 'Test Company',
-      slug: 'test',
-      domain: 'test.localhost',
+      name: 'Salão Elegance', 
+      slug: 'salao-elegance',
+      domain: 'salao-elegance.localhost',
     },
   ];
 
   const createdCompanies = [];
   
   for (const companyData of companies) {
+    // Generate a 6-character registration code
+    const registrationCode = Math.random().toString(36).substr(2, 6).toUpperCase();
+    
+    // Set expiration to 7 days from now
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 7);
+    
     const company = await prisma.company.upsert({
       where: { slug: companyData.slug },
       update: {},
@@ -46,6 +38,8 @@ async function main() {
         slug: companyData.slug,
         domain: companyData.domain,
         logo: null,
+        registrationCode: registrationCode,
+        registrationCodeExpiresAt: expirationDate,
         settings: {
           theme: 'light',
           features: {
@@ -59,7 +53,7 @@ async function main() {
     });
     
     createdCompanies.push(company);
-    console.log('✅ Company created:', company.name, `(${company.slug})`);
+    console.log('✅ Company created:', company.name, `(${company.slug}) - Code: ${registrationCode} (expires: ${expirationDate.toLocaleDateString()})`);
   }
 
   // Create users for each company
@@ -71,7 +65,12 @@ async function main() {
     
     // Create admin user for each company
     const adminUser = await prisma.user.upsert({
-      where: { email: `admin${companyNum}@servify.com.br` },
+      where: { 
+        email_companyId: {
+          email: `admin${companyNum}@servify.com.br`,
+          companyId: company.id
+        }
+      },
       update: {},
       create: {
         email: `admin${companyNum}@servify.com.br`,
@@ -88,7 +87,12 @@ async function main() {
 
     // Create regular user for each company
     const regularUser = await prisma.user.upsert({
-      where: { email: `user${companyNum}@servify.com.br` },
+      where: { 
+        email_companyId: {
+          email: `user${companyNum}@servify.com.br`,
+          companyId: company.id
+        }
+      },
       update: {},
       create: {
         email: `user${companyNum}@servify.com.br`,
@@ -165,8 +169,54 @@ async function main() {
         },
       });
       createdProfessionals.push(professional);
+
+      // Create user account for the professional
+      await prisma.user.create({
+        data: {
+          email: professionalData.email,
+          password: await bcrypt.hash('admin123', 10),
+          firstName: professionalData.name.split(' ')[0],
+          lastName: professionalData.name.split(' ').slice(1).join(' ') || '',
+          role: 'USER',
+          isActive: true,
+          companyId: company.id,
+          professionalId: professional.id, // Link user to professional
+        },
+      });
     }
     console.log(`✅ Professionals created for ${company.name}:`, createdProfessionals.length);
+
+    // Create some professional-specific services
+    if (createdProfessionals.length > 0) {
+      const professionalServices = [
+        {
+          name: 'Corte Especializado',
+          description: 'Corte especializado do João',
+          price: 40.00,
+          duration: 45,
+          category: 'Especializado',
+          professionalId: createdProfessionals[0].id,
+        },
+        {
+          name: 'Tratamento Capilar',
+          description: 'Tratamento especializado da Maria',
+          price: 60.00,
+          duration: 60,
+          category: 'Tratamento',
+          professionalId: createdProfessionals[1].id,
+        },
+      ];
+
+      for (const serviceData of professionalServices) {
+        await prisma.service.create({
+          data: {
+            ...serviceData,
+            companyId: company.id,
+          },
+        });
+      }
+      console.log(`✅ Professional-specific services created for ${company.name}:`, professionalServices.length);
+    }
 
     // Create sample appointments for each company
     const now = new Date();
@@ -216,7 +266,14 @@ async function main() {
     for (const appointmentData of appointments) {
       await prisma.appointment.create({
         data: {
-          ...appointmentData,
+          clientName: appointmentData.clientName,
+          clientPhone: appointmentData.clientPhone,
+          clientEmail: appointmentData.clientEmail,
+          startTime: appointmentData.startTime,
+          endTime: appointmentData.endTime,
+          status: appointmentData.status as any,
+          serviceId: appointmentData.serviceId,
+          professionalId: appointmentData.professionalId,
           companyId: company.id,
         },
       });
@@ -226,28 +283,19 @@ async function main() {
 
   console.log('🎉 Database seed completed successfully!');
   console.log('\n📋 Multi-tenant login credentials:');
-  console.log('Empresa 1:');
+  console.log('Barbearia Central:');
   console.log('  Admin: admin1@servify.com.br / admin123');
   console.log('  User:  user1@servify.com.br / admin123');
-  console.log('Empresa 2:');
+  console.log('  Registration Code: XXXXXX (6 chars, expires in 7 days)');
+  console.log('Salão Elegance:');
   console.log('  Admin: admin2@servify.com.br / admin123');
   console.log('  User:  user2@servify.com.br / admin123');
-  console.log('Empresa 3:');
-  console.log('  Admin: admin3@servify.com.br / admin123');
-  console.log('  User:  user3@servify.com.br / admin123');
-  console.log('Demo:');
-  console.log('  Admin: admin4@servify.com.br / admin123');
-  console.log('  User:  user4@servify.com.br / admin123');
-  console.log('Test:');
-  console.log('  Admin: admin5@servify.com.br / admin123');
-  console.log('  User:  user5@servify.com.br / admin123');
+  console.log('  Registration Code: XXXXXX (6 chars, expires in 7 days)');
   console.log('\n🌐 Test URLs:');
-  console.log('  Frontend: http://empresa1.localhost:3000');
-  console.log('  Backend:  http://empresa1.localhost:3001/api/v1/companies');
-  console.log('  Frontend: http://empresa2.localhost:3000');
-  console.log('  Backend:  http://empresa2.localhost:3001/api/v1/companies');
-  console.log('  Frontend: http://demo.localhost:3000');
-  console.log('  Backend:  http://demo.localhost:3001/api/v1/companies');
+  console.log('  Frontend: http://barbearia-central.localhost:3000');
+  console.log('  Backend:  http://barbearia-central.localhost:3001/api/v1/companies');
+  console.log('  Frontend: http://salao-elegance.localhost:3000');
+  console.log('  Backend:  http://salao-elegance.localhost:3001/api/v1/companies');
 }
 
 main()

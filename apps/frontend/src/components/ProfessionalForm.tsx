@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { X } from 'lucide-react';
+import { X, Eye, EyeOff } from 'lucide-react';
 
 interface Professional {
   id: string;
@@ -26,7 +26,9 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
     email: '',
     phone: '',
     commission: 0,
+    password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (professional) {
@@ -35,6 +37,16 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
         email: professional.email || '',
         phone: professional.phone || '',
         commission: professional.commission,
+        password: '', // Don't pre-fill password for editing
+      });
+    } else {
+      // Reset form for new professional
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        commission: 0,
+        password: '',
       });
     }
   }, [professional]);
@@ -47,9 +59,10 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
       Object.fromEntries(
         Object.entries(formData).filter(([key, value]) => {
           if (key === 'commission') return true; // Always include commission
+          if (key === 'password') return false; // Never include password for updates
           return value !== '' && value !== null && value !== undefined;
         })
-      ) : formData;
+      ) : formData; // Include all fields including password for new professionals
     
     onSubmit(submitData);
   };
@@ -90,7 +103,7 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
               placeholder="e.g., John Smith"
             />
           </div>
@@ -107,7 +120,7 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
                 placeholder="john@example.com"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -117,7 +130,7 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
 
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
+                Phone Number *
               </label>
               <input
                 type="tel"
@@ -125,11 +138,47 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
                 placeholder="+1 (555) 123-4567"
               />
             </div>
           </div>
+
+          {/* Password field - only show for new professionals */}
+          {!professional && (
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
+                  placeholder="Minimum 6 characters"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Professional will use this password to login
+              </p>
+            </div>
+          )}
 
           <div>
             <label htmlFor="commission" className="block text-sm font-medium text-gray-700 mb-1">
@@ -145,7 +194,7 @@ export function ProfessionalForm({ professional, onSubmit, onCancel }: Professio
               min="0"
               max="100"
               step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
               placeholder="15.00"
             />
             <p className="text-xs text-gray-500 mt-1">

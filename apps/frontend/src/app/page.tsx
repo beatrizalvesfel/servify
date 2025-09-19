@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -49,7 +49,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link href="/auth/register">
-              <Button size="lg" className="w-full sm:w-aut bg-zinc-800 text-zinc-50">
+              <Button size="lg" className="w-full sm:w-aut bg-zinc-50 text-zinc-800 hover:bg-zinc-200">
                 Start now
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

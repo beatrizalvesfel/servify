@@ -39,7 +39,12 @@ export class AppointmentsController {
       startDate,
       endDate,
     };
-    return this.appointmentsService.findAll(companyId, filters);
+    
+    // Get user role and professional ID for filtering
+    const userRole = req.user?.role;
+    const userProfessionalId = req.user?.professionalId;
+    
+    return this.appointmentsService.findAll(companyId, filters, userRole, userProfessionalId);
   }
 
   @Get('available-slots')

@@ -2,19 +2,22 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 import { useState } from 'react'
 
 export default function RegisterPage() {
   const { register } = useAuth();
+  const [userType, setUserType] = useState<'company' | 'professional'>('company');
   const [formData, setFormData] = useState({ 
     firstName: '', 
     lastName: '', 
+    companyName: '',
     email: '', 
     password: '', 
     confirmPassword: '',
-    companyId: 'servify-demo' // Default company for demo
+    companyCode: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,12 +33,34 @@ export default function RegisterPage() {
       return;
     }
 
+    // Validate required fields based on user type
+    if (userType === 'company') {
+      if (!formData.companyName.trim()) {
+        setError('Company name is required');
+        setLoading(false);
+        return;
+      }
+    } else {
+      if (!formData.firstName.trim() || !formData.lastName.trim()) {
+        setError('First name and last name are required');
+        setLoading(false);
+        return;
+      }
+      if (!formData.companyCode.trim()) {
+        setError('Company code is required');
+        setLoading(false);
+        return;
+      }
+    }
+
     const result = await register({
+      userType,
       firstName: formData.firstName,
       lastName: formData.lastName,
+      companyName: formData.companyName,
       email: formData.email,
       password: formData.password,
-      companyId: formData.companyId,
+      companyCode: formData.companyCode,
     });
     
     if (!result.success) {
@@ -85,38 +110,115 @@ export default function RegisterPage() {
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                    First name
-                  </label>
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    required
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="John"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                    Last name
-                  </label>
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    required
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Doe"
-                  />
+              {/* User Type Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  I want to register as:
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setUserType('company')}
+                    className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                      userType === 'company'
+                        ? 'border-zinc-500 bg-zinc-50 text-zinc-700'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="font-medium">Company Owner</div>
+                    <div className="text-sm text-gray-600">Create your business</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserType('professional')}
+                    className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                      userType === 'professional'
+                        ? 'border-zinc-500 bg-zinc-50 text-zinc-700'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="font-medium">Professional</div>
+                    <div className="text-sm text-gray-600">Join a company</div>
+                  </button>
                 </div>
               </div>
+
+              {/* Company Name (for company registration) */}
+              {userType === 'company' && (
+                <div>
+                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+                    Company Name
+                  </label>
+                  <input
+                    id="companyName"
+                    name="companyName"
+                    type="text"
+                    required
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
+                    placeholder="My Company"
+                  />
+                </div>
+              )}
+
+              {/* First Name and Last Name (for professional registration) */}
+              {userType === 'professional' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                      First name
+                    </label>
+                    <input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      required
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
+                      placeholder="John"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                      Last name
+                    </label>
+                    <input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      required
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
+                      placeholder="Doe"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Company Code (for professional registration) */}
+              {userType === 'professional' && (
+                <div>
+                  <label htmlFor="companyCode" className="block text-sm font-medium text-gray-700">
+                    Company Code
+                  </label>
+                  <input
+                    id="companyCode"
+                    name="companyCode"
+                    type="text"
+                    required
+                    value={formData.companyCode}
+                    onChange={handleChange}
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
+                    placeholder="Enter company code"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Ask your company administrator for the registration code
+                  </p>
+                </div>
+              )}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email address
@@ -129,7 +231,7 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
                   placeholder="john@example.com"
                 />
               </div>
@@ -145,7 +247,7 @@ export default function RegisterPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
                   placeholder="Create a password"
                 />
               </div>
@@ -161,19 +263,16 @@ export default function RegisterPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
                   placeholder="Confirm your password"
                 />
               </div>
-              <div className="flex items-center">
-                <input
+              <div className="flex items-center space-x-2">
+                <Checkbox
                   id="terms"
-                  name="terms"
-                  type="checkbox"
                   required
-                  className="h-4 w-4 text-zinc-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   I agree to the{' '}
                   <Link href="/terms" className="text-zinc-600 hover:text-zinc-500">
                     Terms of Service

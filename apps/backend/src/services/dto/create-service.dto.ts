@@ -25,4 +25,8 @@ export class CreateServiceDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'Professional ID must be a valid string' })
+  professionalId?: string | null; // If provided, this service is specific to a professional
 }

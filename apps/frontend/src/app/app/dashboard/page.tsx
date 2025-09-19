@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { usePermissions } from '@/hooks/usePermissions';
 import { 
   Calendar, 
   Users, 
@@ -55,6 +56,7 @@ interface Appointment {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { isAdmin, professionalId } = usePermissions();
   const [stats, setStats] = useState<DashboardStats>({
     totalAppointments: 0,
     totalServices: 0,
@@ -68,13 +70,12 @@ export default function DashboardPage() {
   const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
+      
+      console.log('🔍 Dashboard - isAdmin:', isAdmin);
+      console.log('🔍 Dashboard - professionalId:', professionalId);
       
       const [appointments, services, professionals] = await Promise.all([
         apiClient.getAppointments(),
@@ -87,30 +88,71 @@ export default function DashboardPage() {
       const safeServices = Array.isArray(services) ? services : [];
       const safeProfessionals = Array.isArray(professionals) ? professionals : [];
 
-      // Calculate total revenue from COMPLETED appointments only
-      const totalRevenue = safeAppointments
-        .filter(apt => apt.status === 'COMPLETED')
-        .reduce((sum, apt) => sum + Number(apt.service?.price || 0), 0);
+      console.log('🔍 Dashboard - Raw appointments:', safeAppointments);
+      console.log('🔍 Dashboard - Raw services:', safeServices);
+      console.log('🔍 Dashboard - Raw professionals:', safeProfessionals);
 
-      // Count appointments by status - using direct filter approach
-      const pendingAppointments = safeAppointments.filter(apt => apt.status === 'PENDING').length;
-      const confirmedAppointments = safeAppointments.filter(apt => apt.status === 'CONFIRMED').length;
-      const completedAppointments = safeAppointments.filter(apt => apt.status === 'COMPLETED').length;
-      const cancelledAppointments = safeAppointments.filter(apt => apt.status === 'CANCELLED').length;
+      // Calculate revenue based on user type
+      let totalRevenue = 0;
+      const completedAppointments = safeAppointments.filter(apt => apt.status === 'COMPLETED');
+      
+      if (isAdmin) {
+        // Admin sees total revenue minus commissions
+        totalRevenue = completedAppointments.reduce((sum, apt) => {
+          const servicePrice = Number(apt.service?.price || 0);
+          const professionalCommission = Number(apt.professional?.commission || 0);
+          const commissionAmount = (servicePrice * professionalCommission) / 100;
+          return sum + (servicePrice - commissionAmount);
+        }, 0);
+      } else {
+        // Professional sees only their commission earnings
+        const professionalAppointments = completedAppointments.filter(apt => 
+          apt.professional?.id === professionalId
+        );
+        totalRevenue = professionalAppointments.reduce((sum, apt) => {
+          const servicePrice = Number(apt.service?.price || 0);
+          const professionalCommission = Number(apt.professional?.commission || 0);
+          const commissionAmount = (servicePrice * professionalCommission) / 100;
+          return sum + commissionAmount;
+        }, 0);
+      }
 
-      // Get recent appointments (last 10, sorted by start time)
-      const sortedAppointments = safeAppointments
+      // Filter appointments based on user permissions
+      const filteredAppointments = isAdmin 
+        ? safeAppointments 
+        : safeAppointments.filter(apt => apt.professional?.id === professionalId);
+
+      console.log('🔍 Dashboard - Filtered appointments:', filteredAppointments);
+      console.log('🔍 Dashboard - professionalId for filtering:', professionalId);
+
+      // Count appointments by status - using filtered appointments
+      const pendingAppointments = filteredAppointments.filter(apt => apt.status === 'PENDING').length;
+      const confirmedAppointments = filteredAppointments.filter(apt => apt.status === 'CONFIRMED').length;
+      const completedAppointmentsCount = filteredAppointments.filter(apt => apt.status === 'COMPLETED').length;
+      const cancelledAppointments = filteredAppointments.filter(apt => apt.status === 'CANCELLED').length;
+
+      // Get recent appointments (last 10, sorted by start time) - filtered by permissions
+      const sortedAppointments = filteredAppointments
         .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
         .slice(0, 10);
 
+      // Filter services and professionals based on user permissions
+      const filteredServices = isAdmin 
+        ? safeServices 
+        : safeServices.filter(service => !service.professionalId || service.professionalId === professionalId);
+      
+      const filteredProfessionals = isAdmin 
+        ? safeProfessionals 
+        : safeProfessionals.filter(prof => prof.id === professionalId);
+
       const finalStats = {
-        totalAppointments: safeAppointments.length,
-        totalServices: safeServices.length,
-        totalProfessionals: safeProfessionals.length,
+        totalAppointments: filteredAppointments.length,
+        totalServices: filteredServices.length,
+        totalProfessionals: filteredProfessionals.length,
         totalRevenue,
         pendingAppointments,
         confirmedAppointments,
-        completedAppointments,
+        completedAppointments: completedAppointmentsCount,
         cancelledAppointments,
       };
       
@@ -123,7 +165,11 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdmin, professionalId]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -175,12 +221,14 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-2">Overview of your business</p>
+            <p className="text-gray-600 mt-2">
+              {isAdmin ? 'Overview of your business' : 'Overview of your professional activity'}
+            </p>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${isAdmin ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -202,7 +250,9 @@ export default function DashboardPage() {
                   <DollarSign className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-green-600">Receita Total</p>
+                  <p className="text-sm font-medium text-green-600">
+                    {isAdmin ? 'Receita Líquida' : 'Comissões Ganhas'}
+                  </p>
                   <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.totalRevenue)}</p>
                 </div>
               </div>
@@ -216,26 +266,30 @@ export default function DashboardPage() {
                   <Tag className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-blue-600">Total de Serviços</p>
+                  <p className="text-sm font-medium text-blue-600">
+                    {isAdmin ? 'Total de Serviços' : 'Meus Serviços'}
+                  </p>
                   <p className="text-2xl font-bold text-gray-900">{stats.totalServices}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Users className="h-6 w-6 text-purple-600" />
+          {isAdmin && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Users className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-purple-600">Total de Profissionais</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalProfessionals}</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-purple-600">Total de Profissionais</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalProfessionals}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -304,7 +358,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Ações Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${isAdmin ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'}`}>
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -361,33 +415,35 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Profissionais
-            </CardTitle>
-            <CardDescription>
-              Gerencie sua equipe de profissionais
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 flex flex-col">
-              <Link href="/app/professionals">
-                <Button className="w-full flex items-center justify-between">
-                  Ver Profissionais
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/app/professionals">
-                <Button variant="outline" className="w-full flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Adicionar Profissional
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        {isAdmin && (
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Profissionais
+              </CardTitle>
+              <CardDescription>
+                Gerencie sua equipe de profissionais
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 flex flex-col">
+                <Link href="/app/professionals">
+                  <Button className="w-full flex items-center justify-between">
+                    Ver Profissionais
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/app/professionals">
+                  <Button variant="outline" className="w-full flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Adicionar Profissional
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         </div>
       </div>
     </div>

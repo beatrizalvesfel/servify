@@ -28,11 +28,14 @@ export interface LoginData {
 }
 
 export interface RegisterData {
+  userType: 'company' | 'professional';
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  companyId: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  companyCode?: string;
+  companyId?: string;
 }
 
 export interface AuthResponse {
@@ -44,6 +47,7 @@ export interface AuthResponse {
     lastName: string;
     role: string;
     companyId: string;
+    companySlug?: string;
   };
 }
 
@@ -97,10 +101,27 @@ class ApiClient {
   }
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    if (data.userType === 'company') {
+      return this.request<AuthResponse>('/auth/register/company', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          companyName: data.companyName,
+        }),
+      });
+    } else {
+      return this.request<AuthResponse>('/auth/register/professional', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          companyCode: data.companyCode,
+        }),
+      });
+    }
   }
 
   async getProfile(): Promise<any> {
@@ -213,6 +234,17 @@ class ApiClient {
 
   async getAvailableSlots(professionalId: string, serviceId: string, date: string): Promise<any[]> {
     return this.request(`/appointments/available-slots?professionalId=${professionalId}&serviceId=${serviceId}&date=${date}`);
+  }
+
+  // Company API
+  async getCompany(): Promise<any> {
+    return this.request('/companies');
+  }
+
+  async generateRegistrationCode(companyId: string): Promise<any> {
+    return this.request(`/companies/${companyId}/generate-registration-code`, {
+      method: 'POST',
+    });
   }
 }
 

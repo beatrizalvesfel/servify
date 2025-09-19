@@ -18,20 +18,33 @@ export class ProfessionalsService {
     createProfessionalDto: CreateProfessionalDto,
     companyId: string,
   ) {
-    // Check if email already exists
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: createProfessionalDto.email },
+    // Check if email already exists in this company
+    const existingUser = await this.prisma.user.findFirst({
+      where: { 
+        email: createProfessionalDto.email,
+        companyId: companyId
+      },
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException('Email already exists in this company');
     }
 
-    // Generate a random password
-    const tempPassword = this.generateTempPassword();
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    // Hash the provided password
+    const hashedPassword = await bcrypt.hash(createProfessionalDto.password, 10);
 
-    // Create user account for the professional
+    // Create professional record first
+    const professional = await this.prisma.professional.create({
+      data: {
+        name: createProfessionalDto.name,
+        email: createProfessionalDto.email,
+        phone: createProfessionalDto.phone,
+        commission: createProfessionalDto.commission,
+        companyId,
+      },
+    });
+
+    // Create user account for the professional and link to professional
     await this.prisma.user.create({
       data: {
         email: createProfessionalDto.email,
@@ -43,15 +56,13 @@ export class ProfessionalsService {
           createProfessionalDto.name.split(' ').slice(1).join(' ') || '',
         role: 'USER', // Professionals are regular users
         companyId,
+        professionalId: professional.id, // Link user to professional
       },
     });
 
-    // Create professional record
-    const professional = await this.prisma.professional.create({
-      data: {
-        ...createProfessionalDto,
-        companyId,
-      },
+    // Return professional with appointments
+    const professionalWithAppointments = await this.prisma.professional.findUnique({
+      where: { id: professional.id },
       include: {
         appointments: {
           select: {
@@ -72,23 +83,14 @@ export class ProfessionalsService {
     });
 
     return {
-      ...professional,
+      ...professionalWithAppointments,
       loginCredentials: {
         email: createProfessionalDto.email,
-        password: tempPassword,
+        password: createProfessionalDto.password,
       },
     };
   }
 
-  private generateTempPassword(): string {
-    const chars =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  }
 
   async findAll(companyId: string) {
     return this.prisma.professional.findMany({

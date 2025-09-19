@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useCompanyAccess } from '@/hooks/useCompanyAccess';
+import { usePermissions } from '@/hooks/usePermissions';
 import { 
   Calendar, 
   Users, 
@@ -24,6 +26,7 @@ interface User {
   lastName: string;
   role: string;
   companyId: string;
+  companySlug?: string;
 }
 
 export default function AppLayout({
@@ -36,12 +39,10 @@ export default function AppLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { hasAccess, currentCompanySlug, loading: accessLoading } = useCompanyAccess();
+  const { canAccessProfessionals } = usePermissions();
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
+  const loadUser = useCallback(async () => {
     try {
       const userData = await apiClient.getProfile();
       setUser(userData);
@@ -51,7 +52,11 @@ export default function AppLayout({
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
 
   const handleLogout = async () => {
     try {
@@ -67,13 +72,38 @@ export default function AppLayout({
     { name: 'Dashboard', href: '/app/dashboard', icon: BarChart3 },
     { name: 'Appointments', href: '/app/appointments', icon: Calendar },
     { name: 'Services', href: '/app/services', icon: Tag },
-    { name: 'Professionals', href: '/app/professionals', icon: Users },
+    ...(canAccessProfessionals ? [{ name: 'Professionals', href: '/app/professionals', icon: Users }] : []),
   ];
 
-  if (loading) {
+  if (loading || accessLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  // Check if user has access to current company
+  if (hasAccess === false && currentCompanySlug) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Negado</h2>
+            <p className="text-gray-600 mb-6">
+              Você não tem acesso à empresa <strong>{currentCompanySlug}</strong>.
+            </p>
+            <Button 
+              onClick={() => router.push('/auth/login')}
+              className="w-full"
+            >
+              Fazer Login
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
